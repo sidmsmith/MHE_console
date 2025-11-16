@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MHE Console v2.0.0</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #121212;
+      --card-bg: #1e1e1e;
+      --input-bg: #2d2d2d;
+      --border: #333;
+      --text: #e0e0e0;
+      --red-text: #ff6b6b;
+      --blue-select: #339af0;
+      --success: #28a745;
+      --primary: #0d6efd;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100vh;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    body { 
+      background: var(--bg-dark); 
+      color: var(--text); 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 1rem;
+      gap: 1rem;
+    }
+
+    .header-section {
+      flex-shrink: 0;
+    }
+
+    .main-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      padding: 0.75rem 1rem;
+    }
+
+    .form-control, textarea {
+      background: var(--input-bg);
+      border: 1px solid #444;
+      color: #fff;
+      border-radius: 8px;
+    }
+    .form-control:focus, textarea:focus {
+      background: #333;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+      color: #fff;
+    }
+
+    .btn-primary { background: var(--primary); border: none; }
+    .btn-success { background: var(--success); border: none; }
+    .btn-secondary { background: #6c757d; border: none; }
+    .btn-primary:hover { background: #0b5ed7; }
+    .btn-success:hover { background: #218838; }
+    .btn-secondary:hover { background: #5a6268; }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 2rem;
+    }
+    .status { 
+      font-weight: 600; 
+      padding: 0.25rem 0;
+      flex: 1;
+    }
+
+    .form-label { color: #bbbbbb; font-weight: 600; }
+    small { color: #999; }
+    .text-muted { color: #999 !important; }
+    h2 { color: var(--primary); margin: 0; font-size: 1.5rem; }
+    h2 a { transition: opacity 0.2s; }
+    h2 a:hover { opacity: 0.8; text-decoration: underline !important; }
+
+    /* HIDDEN UNTIL AUTH */
+    #mainUI { display: none; }
+
+    /* SECTIONS GRID */
+    .sections-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    @media (max-width: 768px) {
+      .sections-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .section-card {
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .section-header h4 {
+      margin: 0;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .section-status {
+      font-size: 0.85em;
+      font-weight: 500;
+      margin-left: 0.5rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .section-status.info {
+      color: #339af0;
+    }
+
+    .section-status.success {
+      color: #51cf66;
+    }
+
+    .section-status.error {
+      color: #ff6b6b;
+    }
+
+    .section-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      min-height: 0;
+    }
+
+    .section-content.collapsed {
+      display: none;
+    }
+
+    .section-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .section-buttons .btn {
+      flex: 1;
+    }
+
+    /* RESULTS CONSOLE */
+    .results-console {
+      flex-shrink: 0;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      height: 250px; /* Fixed height - no resizing */
+      display: flex;
+      flex-direction: column;
+      overflow: hidden; /* Prevent container from growing */
+    }
+
+    .results-console-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .results-console-header h5 {
+      margin: 0;
+      color: var(--primary);
+    }
+
+    #consoleOutput {
+      background: #000;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #0f0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8em;
+      padding: 0.5rem;
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      min-height: 0; /* Allow flex shrinking */
+    }
+
+    .collapse-icon {
+      transition: transform 0.2s;
+    }
+
+    .collapse-icon.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    /* ENDPOINT STATUS INDICATOR - Icon-based (Option 3) */
+    .endpoint-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9em;
+    }
+
+    .endpoint-status-label {
+      color: #bbbbbb;
+      font-weight: 600;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .status-icon {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .status-icon.started {
+      background-color: #51cf66;
+      color: white;
+    }
+
+    .status-icon.stopped {
+      background-color: #ffa94d;
+      color: white;
+    }
+
+    .status-icon.offline {
+      background-color: #868e96;
+      color: white;
+    }
+
+    .status-text {
+      color: #e0e0e0;
+      font-weight: 500;
+    }
+
+    .status-text.started {
+      color: #51cf66;
+    }
+
+    .status-text.stopped {
+      color: #ffa94d;
+    }
+
+    .status-text.offline {
+      color: #868e96;
+    }
+
+
+    /* Tooltip for status indicator - larger for emphasis */
+    .endpoint-status {
+      position: relative;
+    }
+
+    .endpoint-status .tooltip {
+      visibility: hidden;
+      opacity: 0;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 0.5rem 0.9rem;
+      position: absolute;
+      z-index: 1000;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      font-size: 1em;
+      font-weight: 500;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .endpoint-status .tooltip::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -6px;
+      border-width: 6px;
+      border-style: solid;
+      border-color: #333 transparent transparent transparent;
+    }
+
+    .endpoint-status:hover .tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* Make entire endpoint-status area clickable when status is clickable */
+    .endpoint-status.clickable {
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .endpoint-status.clickable:hover {
+      opacity: 0.8;
+    }
+
+    .endpoint-status.not-clickable {
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="main-container">
+    <!-- HEADER -->
+    <div class="header-section">
+      <div class="main-card">
+        <h2 class="text-center mb-2">
+          <a href="#" id="mheJournalLink" class="text-decoration-none" title="Open MHE Journal" target="_blank" style="color: var(--primary); cursor: pointer;">MHE Console v2.0.0</a>
+        </h2>
+
+        <!-- ORG -->
+        <div class="mb-2">
+          <div class="d-flex align-items-center gap-2">
+            <label class="form-label mb-0" style="min-width: 50px;">ORG:</label>
+            <input type="text" id="org" class="form-control" placeholder="Enter ORG" maxlength="20" style="width: 200px; max-width: 100%;" />
+            <button id="authBtn" class="btn btn-success px-3">Authenticate</button>
+            <div class="status ms-auto" id="status" style="font-size: 0.9em;">Enter ORG and press Enter to authenticate</div>
+            <div class="endpoint-status ms-3" id="endpointStatusContainer">
+              <span class="endpoint-status-label">Endpoint Status:</span>
+              <div class="status-indicator" id="statusIndicator">
+                <span class="status-icon online" id="endpointStatusIcon">✓</span>
+                <span class="status-text online" id="endpointStatusText">Online</span>
+              </div>
+              <span class="tooltip" id="statusTooltip"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN UI (Hidden until auth) -->
+    <div id="mainUI" style="flex: 1; display: flex; flex-direction: column; min-height: 0; gap: 1rem;">
+      <!-- SECTIONS GRID -->
+      <div class="sections-grid">
+        <!-- Receiving Section -->
+        <div class="section-card">
+          <div class="section-header" onclick="toggleSection('receiving')">
+            <div style="display: flex; align-items: center; flex: 1;">
+              <h4>Receiving</h4>
+              <span class="section-status" id="receiving-status" style="display: none;"></span>
+            </div>
+            <span class="collapse-icon" id="receiving-icon">▼</span>
+          </div>
+          <div class="section-content" id="receiving-content">
+            <div>
+              <label class="form-label">Input (LPNs):</label>
+              <input type="text" id="receiving-input" class="form-control" placeholder="Enter LPN(s) - separate with spaces, commas, or semicolons" />
+              <small class="text-muted">Multiple LPNs supported. Separate with spaces, commas, or semicolons. Case-sensitive.</small>
+            </div>
+            <div class="section-buttons">
+              <button class="btn btn-success" onclick="generateMessage('receiving')">Generate MHE Message</button>
+              <button class="btn btn-primary" onclick="sendMessage('receiving')">Send MHE Message</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Putaway Section -->
+        <div class="section-card">
+          <div class="section-header" onclick="toggleSection('putaway')">
+            <div style="display: flex; align-items: center; flex: 1;">
+              <h4>Putaway</h4>
+              <span class="section-status" id="putaway-status" style="display: none;"></span>
+            </div>
+            <span class="collapse-icon" id="putaway-icon">▼</span>
+          </div>
+          <div class="section-content" id="putaway-content">
+            <div>
+              <label class="form-label">Input (LPN, Location):</label>
+              <input type="text" id="putaway-input" class="form-control" placeholder="Enter LPN,Location pairs - e.g., LPN1,Location1; LPN2,Location2" />
+              <small class="text-muted">Format: "LPN,Location; LPN,Location". Semicolons separate pairs, commas separate LPN from Location. Case-sensitive. Validates LPN Status = '3000' and Location LocationTypeId = 'STORAGE'.</small>
+            </div>
+            <div class="section-buttons">
+              <button class="btn btn-success" onclick="generateMessage('putaway')">Generate MHE Message</button>
+              <button class="btn btn-primary" onclick="sendMessage('putaway')">Send MHE Message</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Picking Section -->
+        <div class="section-card">
+          <div class="section-header" onclick="toggleSection('picking')">
+            <div style="display: flex; align-items: center; flex: 1;">
+              <h4>Picking</h4>
+              <span class="section-status" id="picking-status" style="display: none;"></span>
+            </div>
+            <span class="collapse-icon" id="picking-icon">▼</span>
+          </div>
+          <div class="section-content" id="picking-content">
+            <div>
+              <label class="form-label">Input:</label>
+              <input type="text" id="picking-input" class="form-control" placeholder="Enter input" />
+            </div>
+            <div class="section-buttons">
+              <button class="btn btn-success" onclick="generateMessage('picking')">Generate MHE Message</button>
+              <button class="btn btn-primary" onclick="sendMessage('picking')">Send MHE Message</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading Section -->
+        <div class="section-card">
+          <div class="section-header" onclick="toggleSection('loading')">
+            <div style="display: flex; align-items: center; flex: 1;">
+              <h4>Loading</h4>
+              <span class="section-status" id="loading-status" style="display: none;"></span>
+            </div>
+            <span class="collapse-icon" id="loading-icon">▼</span>
+          </div>
+          <div class="section-content" id="loading-content">
+            <div>
+              <label class="form-label">Input (OLPNs):</label>
+              <input type="text" id="loading-input" class="form-control" placeholder="Enter OLPN(s) - separate with spaces, commas, or semicolons" />
+              <small class="text-muted">Multiple OLPNs supported. Separate with spaces, commas, or semicolons. Case-sensitive. Validates OLPN Status in ('7200', '7400', '7600'). Shipment will be extracted from validation response.</small>
+            </div>
+            <div class="section-buttons">
+              <button class="btn btn-success" onclick="generateMessage('loading')">Generate MHE Message</button>
+              <button class="btn btn-primary" onclick="sendMessage('loading')">Send MHE Message</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULTS CONSOLE -->
+      <div class="results-console">
+        <div class="results-console-header">
+          <h5>Console Output</h5>
+          <button class="btn btn-sm btn-secondary" onclick="clearConsole()">Clear</button>
+        </div>
+        <div id="consoleOutput">Ready. Authenticate to begin.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // DOM Elements
+    const orgInput = document.getElementById('org');
+    const authBtn = document.getElementById('authBtn');
+    const mainUI = document.getElementById('mainUI');
+    const statusEl = document.getElementById('status');
+    const consoleOutput = document.getElementById('consoleOutput');
+    const mheJournalLink = document.getElementById('mheJournalLink');
+
+    let token = null;
+    let generatedMessages = {}; // Store generated messages per section
+
+    // ===== MHE JOURNAL LINK =====
+    // Base URL for MHE Journal - can be configured via environment variable if needed
+    const MHE_JOURNAL_BASE_URL = 'https://salep.sce.manh.com/udc/dm/linkTo';
+    
+    function buildMHEJournalURL() {
+      const org = orgInput.value.trim();
+      if (!org) {
+        // If no org, disable the link
+        mheJournalLink.href = '#';
+        mheJournalLink.style.pointerEvents = 'none';
+        mheJournalLink.style.opacity = '0.6';
+        return;
+      }
+      
+      // Build URL with dynamic org and location
+      // Location pattern: {org}-DM1 (can be customized)
+      const location = `${org}-DM1`;
+      const params = new URLSearchParams({
+        'M_Screen': 'whseDeviceIntegrationMessageJournal',
+        'M_Organization': org,
+        'M_Location': location
+      });
+      
+      mheJournalLink.href = `${MHE_JOURNAL_BASE_URL}?${params.toString()}`;
+      mheJournalLink.style.pointerEvents = 'auto';
+      mheJournalLink.style.opacity = '1';
+    }
+    
+    // Update URL when org changes
+    orgInput.addEventListener('input', buildMHEJournalURL);
+    orgInput.addEventListener('change', buildMHEJournalURL);
+    
+    // Initialize URL on load
+    buildMHEJournalURL();
+
+    // Ensure ORG is always blank on load (security)
+    orgInput.value = '';
+    
+    // Hide mainUI initially and on any auth failure
+    mainUI.style.display = 'none';
+    
+    // Function to hide UI on auth failure
+    function hideUIOnAuthFailure() {
+      token = null;
+      mainUI.style.display = 'none';
+      updateEndpointStatus('Offline'); // Set endpoint status to Offline on auth failure
+    }
+
+    // ===== LOCALSTORAGE PERSISTENCE =====
+    const STORAGE_KEY = 'mhe_console_preferences';
+    
+    function savePreferences() {
+      const prefs = {
+        receiving: document.getElementById('receiving-input').value,
+        putaway: document.getElementById('putaway-input').value,
+        picking: document.getElementById('picking-input').value,
+        loading: document.getElementById('loading-input').value
+      };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+      } catch (e) {
+        console.warn('Failed to save preferences:', e);
+      }
+    }
+    
+    function loadPreferences() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const prefs = JSON.parse(saved);
+          if (prefs.receiving !== undefined) document.getElementById('receiving-input').value = prefs.receiving;
+          if (prefs.putaway !== undefined) document.getElementById('putaway-input').value = prefs.putaway;
+          if (prefs.picking !== undefined) document.getElementById('picking-input').value = prefs.picking;
+          if (prefs.loading !== undefined) document.getElementById('loading-input').value = prefs.loading;
+        }
+      } catch (e) {
+        console.warn('Failed to load preferences:', e);
+      }
+    }
+    
+    // Load preferences on page load
+    loadPreferences();
+
+    // Auto-save preferences and Enter key support
+    ['receiving', 'putaway', 'picking', 'loading'].forEach(section => {
+      const input = document.getElementById(`${section}-input`);
+      let timeout;
+      input.addEventListener('input', () => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => savePreferences(), 500);
+      });
+      // Enter key triggers Generate MHE Message
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          generateMessage(section);
+        }
+      });
+    });
+
+    // STATUS
+    function status(text, type = 'info') {
+      statusEl.textContent = text;
+      statusEl.className = `status text-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'}`;
+    }
+
+    // SECTION STATUS - Update status for specific section
+    function sectionStatus(section, text, type = 'info') {
+      const statusEl = document.getElementById(`${section}-status`);
+      if (statusEl) {
+        if (text) {
+          statusEl.textContent = text;
+          statusEl.className = `section-status ${type}`;
+          statusEl.style.display = 'inline-block';
+        } else {
+          statusEl.style.display = 'none';
+        }
+      }
+    }
+
+    // ENDPOINT STATUS INDICATOR
+    // Function to update endpoint status
+    // Usage: updateEndpointStatus('Started'), updateEndpointStatus('Stopped'), or updateEndpointStatus('Offline')
+    function updateEndpointStatus(status) {
+      const icon = document.getElementById('endpointStatusIcon');
+      const text = document.getElementById('endpointStatusText');
+      const container = document.getElementById('endpointStatusContainer');
+      const tooltip = document.getElementById('statusTooltip');
+      
+      if (status === 'Started') {
+        icon.className = 'status-icon started';
+        icon.textContent = '✓';
+        text.className = 'status-text started';
+        text.textContent = 'Started';
+        container.className = 'endpoint-status ms-3 clickable';
+        tooltip.textContent = 'Stop Endpoint';
+      } else if (status === 'Stopped') {
+        icon.className = 'status-icon stopped';
+        icon.textContent = '○';
+        text.className = 'status-text stopped';
+        text.textContent = 'Stopped';
+        container.className = 'endpoint-status ms-3 clickable';
+        tooltip.textContent = 'Start Endpoint';
+      } else if (status === 'Offline') {
+        icon.className = 'status-icon offline';
+        icon.textContent = '✕';
+        text.className = 'status-text offline';
+        text.textContent = 'Offline';
+        container.className = 'endpoint-status ms-3 not-clickable';
+        tooltip.textContent = 'Endpoint is offline - cannot connect to check status';
+      } else {
+        // Unknown/checking status
+        icon.className = 'status-icon offline';
+        icon.textContent = '?';
+        text.className = 'status-text';
+        text.textContent = 'Checking...';
+        container.className = 'endpoint-status ms-3 not-clickable';
+        tooltip.textContent = '';
+      }
+    }
+
+    // Toggle endpoint status (start/stop)
+    async function toggleEndpointStatus() {
+      if (!token) {
+        console.log('[ENDPOINT_TOGGLE] No token');
+        return;
+      }
+      
+      const org = orgInput.value.trim();
+      if (!org) {
+        console.log('[ENDPOINT_TOGGLE] No org');
+        return;
+      }
+
+      const currentStatus = document.getElementById('endpointStatusText').textContent;
+      
+      // Don't allow toggling if offline or checking
+      if (currentStatus === 'Offline' || currentStatus === 'Checking...') {
+        console.log('[ENDPOINT_TOGGLE] Cannot toggle - endpoint is offline or checking');
+        return;
+      }
+
+      const action = currentStatus === 'Started' ? 'stop' : 'start';
+      const actionText = currentStatus === 'Started' ? 'Stopping' : 'Starting';
+      
+      console.log(`[ENDPOINT_TOGGLE] ${actionText} endpoint...`);
+      
+      // Show loading state
+      const originalStatus = currentStatus;
+      updateEndpointStatus('Checking...');
+      
+      try {
+        const res = await api(`endpoint_${action}`, { org, token });
+        console.log(`[ENDPOINT_TOGGLE] ${actionText} response:`, res);
+        
+        if (res.success) {
+          logToConsole(`Endpoint ${action}ed successfully`, 'success');
+          // Wait a moment then check status again
+          setTimeout(() => {
+            checkEndpointStatus();
+          }, 1000);
+        } else {
+          logToConsole(`Failed to ${action} endpoint: ${res.error || 'Unknown error'}`, 'error');
+          // Restore original status on failure
+          updateEndpointStatus(originalStatus);
+        }
+      } catch (e) {
+        console.error(`[ENDPOINT_TOGGLE] Exception:`, e);
+        logToConsole(`Error ${actionText.toLowerCase()} endpoint: ${e.message}`, 'error');
+        // Restore original status on error
+        updateEndpointStatus(originalStatus);
+      }
+    }
+    
+    // Check endpoint status via API
+    async function checkEndpointStatus() {
+      if (!token) {
+        console.log('[ENDPOINT_STATUS] No token, setting Offline');
+        updateEndpointStatus('Offline');
+        return;
+      }
+      
+      const org = orgInput.value.trim();
+      if (!org) {
+        console.log('[ENDPOINT_STATUS] No org, setting Offline');
+        updateEndpointStatus('Offline');
+        return;
+      }
+      
+      try {
+        console.log('[ENDPOINT_STATUS] Calling API...');
+        const res = await api('endpoint_status', { org, token });
+        console.log('[ENDPOINT_STATUS] API Response:', res);
+        
+        if (res.success && res.status) {
+          // Use the actual status from API: 'Started' or 'Stopped'
+          const status = res.status === 'Started' ? 'Started' : res.status === 'Stopped' ? 'Stopped' : 'Offline';
+          console.log(`[ENDPOINT_STATUS] Success: status=${status}`);
+          updateEndpointStatus(status);
+        } else {
+          // API call failed or no status - connection issue
+          console.log(`[ENDPOINT_STATUS] API call failed or no status:`, res.error);
+          updateEndpointStatus('Offline');
+        }
+      } catch (e) {
+        // Exception means connection failure
+        console.error('[ENDPOINT_STATUS] Exception:', e);
+        updateEndpointStatus('Offline');
+      }
+    }
+    
+    // Initialize endpoint status - check after authentication
+    updateEndpointStatus('Offline'); // Start as Offline until we check
+
+    // Add click handler to entire endpoint status container
+    document.getElementById('endpointStatusContainer').addEventListener('click', () => {
+      const currentStatus = document.getElementById('endpointStatusText').textContent;
+      if (currentStatus === 'Started' || currentStatus === 'Stopped') {
+        toggleEndpointStatus();
+      }
+    });
+
+    // CONSOLE OUTPUT
+    function logToConsole(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const prefix = type === 'error' ? '[ERROR]' : type === 'success' ? '[SUCCESS]' : '[INFO]';
+      const color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : '#339af0';
+      consoleOutput.innerHTML += `<span style="color: ${color}">[${timestamp}] ${prefix}</span> ${message}\n`;
+      consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    }
+
+    function clearConsole() {
+      consoleOutput.textContent = 'Console cleared.\n';
+    }
+
+    // API
+    async function api(action, data = {}) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      return fetch(`/api/${action}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data)
+      }).then(r => r.json());
+    }
+
+    // App opened
+    window.addEventListener('load', () => {
+      api('app_opened', {});
+      orgInput.focus();
+    });
+
+    // Auth
+    async function authenticate() {
+      const org = orgInput.value.trim();
+      if (!org) {
+        status('ORG required', 'error');
+        hideUIOnAuthFailure();
+        return;
+      }
+      status('Authenticating...');
+      logToConsole(`Authenticating with ORG: ${org}...`);
+      const res = await api('auth', { org });
+      if (!res.success) {
+        status(res.error || 'Auth failed', 'error');
+        logToConsole(`Authentication failed: ${res.error || 'Unknown error'}`, 'error');
+        hideUIOnAuthFailure();
+        return;
+      }
+      token = res.token;
+      status('Authenticated – ready!', 'success');
+      logToConsole('Authentication successful!', 'success');
+      mainUI.style.display = 'flex';
+      
+      // Check endpoint status after authentication
+      checkEndpointStatus();
+    }
+
+    orgInput.addEventListener('keypress', e => {
+      if (e.key === 'Enter') authenticate();
+    });
+    authBtn.onclick = authenticate;
+
+    // Toggle section collapse
+    function toggleSection(section) {
+      const content = document.getElementById(`${section}-content`);
+      const icon = document.getElementById(`${section}-icon`);
+      const isCollapsed = content.classList.contains('collapsed');
+      
+      if (isCollapsed) {
+        content.classList.remove('collapsed');
+        icon.classList.remove('collapsed');
+      } else {
+        content.classList.add('collapsed');
+        icon.classList.add('collapsed');
+      }
+    }
+
+    // Generate MHE Message
+    async function generateMessage(section) {
+      if (!token) {
+        status('Authenticate first', 'error');
+        logToConsole('Authentication required. Please authenticate first.', 'error');
+        hideUIOnAuthFailure();
+        return;
+      }
+
+      const input = document.getElementById(`${section}-input`).value.trim();
+      if (!input) {
+        sectionStatus(section, 'Input required', 'error');
+        logToConsole(`[${section.toUpperCase()}] Input required for ${section} section`, 'error');
+        return;
+      }
+
+      const org = orgInput.value.trim();
+      logToConsole(`[${section.toUpperCase()}] Generating message for input: ${input}...`);
+      sectionStatus(section, `Generating...`, 'info');
+
+      try {
+        const requestData = { input, org, token };
+        // Putaway needs org and token for validation (Status = '3000')
+        // Receiving needs org and token for validation (Status = '1000')
+        
+        const res = await api(`generate_${section}`, requestData);
+        
+        if (!res.success) {
+          sectionStatus(section, res.error || 'Generation failed', 'error');
+          
+          // Enhanced error display for sections with validation (Receiving, Putaway, Loading)
+          if (section === 'receiving' && res.invalid) {
+            logToConsole(`[${section.toUpperCase()}] LPN Validation failed:`, 'error');
+            if (res.valid && res.valid.length > 0) {
+              logToConsole(`  Valid LPNs: ${res.valid.join(', ')}`, 'info');
+            }
+            logToConsole(`  Invalid LPNs: ${res.invalid.join(', ')}`, 'error');
+            if (res.errors && res.errors.length > 0) {
+              res.errors.forEach(err => logToConsole(`  Error: ${err}`, 'error'));
+            }
+            
+            // Log validation request and response
+            if (res.validation_request) {
+              logToConsole(`[${section.toUpperCase()}] LPN Validation Request:\n${JSON.stringify(res.validation_request, null, 2)}`, 'info');
+            }
+            if (res.validation_response) {
+              logToConsole(`[${section.toUpperCase()}] LPN Validation Response:\n${JSON.stringify(res.validation_response, null, 2)}`, res.invalid.length > 0 ? 'error' : 'info');
+            }
+          }
+          
+          if (section === 'putaway') {
+            // LPN validation errors
+            if (res.invalid_lpns) {
+              logToConsole(`[${section.toUpperCase()}] LPN Validation failed:`, 'error');
+              if (res.valid_lpns && res.valid_lpns.length > 0) {
+                logToConsole(`  Valid LPNs: ${res.valid_lpns.join(', ')}`, 'info');
+              }
+              logToConsole(`  Invalid LPNs: ${res.invalid_lpns.join(', ')}`, 'error');
+              if (res.lpn_errors && res.lpn_errors.length > 0) {
+                res.lpn_errors.forEach(err => logToConsole(`  Error: ${err}`, 'error'));
+              }
+              
+              if (res.lpn_validation_request) {
+                logToConsole(`[${section.toUpperCase()}] LPN Validation Request:\n${JSON.stringify(res.lpn_validation_request, null, 2)}`, 'info');
+              }
+              if (res.lpn_validation_response) {
+                logToConsole(`[${section.toUpperCase()}] LPN Validation Response:\n${JSON.stringify(res.lpn_validation_response, null, 2)}`, 'error');
+              }
+            }
+            
+            // Location validation errors
+            if (res.invalid_locations) {
+              logToConsole(`[${section.toUpperCase()}] Location Validation failed:`, 'error');
+              if (res.valid_locations && res.valid_locations.length > 0) {
+                logToConsole(`  Valid Locations: ${res.valid_locations.join(', ')}`, 'info');
+              }
+              logToConsole(`  Invalid Locations: ${res.invalid_locations.join(', ')}`, 'error');
+              if (res.location_errors && res.location_errors.length > 0) {
+                res.location_errors.forEach(err => logToConsole(`  Error: ${err}`, 'error'));
+              }
+              
+              if (res.location_validation_request) {
+                logToConsole(`[${section.toUpperCase()}] Location Validation Request:\n${JSON.stringify(res.location_validation_request, null, 2)}`, 'info');
+              }
+              if (res.location_validation_response) {
+                logToConsole(`[${section.toUpperCase()}] Location Validation Response:\n${JSON.stringify(res.location_validation_response, null, 2)}`, 'error');
+              }
+            }
+          }
+          
+          if (section === 'loading') {
+            // OLPN validation errors
+            if (res.invalid_olpns) {
+              logToConsole(`[${section.toUpperCase()}] OLPN Validation failed:`, 'error');
+              if (res.valid_olpns && res.valid_olpns.length > 0) {
+                logToConsole(`  Valid OLPNs: ${res.valid_olpns.join(', ')}`, 'info');
+              }
+              logToConsole(`  Invalid OLPNs: ${res.invalid_olpns.join(', ')}`, 'error');
+              if (res.olpn_errors && res.olpn_errors.length > 0) {
+                res.olpn_errors.forEach(err => logToConsole(`  Error: ${err}`, 'error'));
+              }
+              
+              if (res.olpn_validation_request) {
+                logToConsole(`[${section.toUpperCase()}] OLPN Validation Request:\n${JSON.stringify(res.olpn_validation_request, null, 2)}`, 'info');
+              }
+              if (res.olpn_validation_response) {
+                logToConsole(`[${section.toUpperCase()}] OLPN Validation Response:\n${JSON.stringify(res.olpn_validation_response, null, 2)}`, 'error');
+              }
+            }
+            
+            // Missing shipment errors
+            if (res.missing_shipments) {
+              logToConsole(`[${section.toUpperCase()}] OLPNs missing shipment: ${res.missing_shipments.join(', ')}`, 'error');
+            }
+          }
+          logToConsole(`[${section.toUpperCase()}] Generation failed: ${res.error}`, 'error');
+          
+          // Check if auth failed
+          if (res.error && (res.error.includes('Auth') || res.error.includes('token') || res.error.includes('401'))) {
+            hideUIOnAuthFailure();
+          }
+          return;
+        }
+
+        // Store message first
+        generatedMessages[section] = res.message;
+        
+        // Show validation details FIRST (for Receiving, Putaway, and Loading sections)
+        if (section === 'receiving' || section === 'putaway' || section === 'loading') {
+          // Receiving section - LPN validation only
+          if (section === 'receiving') {
+            if (res.validation_request) {
+              logToConsole(`[${section.toUpperCase()}] LPN Validation Request:\n${JSON.stringify(res.validation_request, null, 2)}`, 'info');
+            }
+            if (res.validation_response) {
+              logToConsole(`[${section.toUpperCase()}] LPN Validation Response:\n${JSON.stringify(res.validation_response, null, 2)}`, 'success');
+            }
+            if (res.lpns_used) {
+              logToConsole(`[${section.toUpperCase()}] LPNs included in message: ${res.lpns_used.join(', ')}`, 'success');
+            }
+          }
+          
+          // Putaway section - both LPN and Location validation
+          if (section === 'putaway') {
+            // LPN validation
+            if (res.lpn_validation_request) {
+              logToConsole(`[${section.toUpperCase()}] LPN Validation Request:\n${JSON.stringify(res.lpn_validation_request, null, 2)}`, 'info');
+            }
+            if (res.lpn_validation_response) {
+              logToConsole(`[${section.toUpperCase()}] LPN Validation Response:\n${JSON.stringify(res.lpn_validation_response, null, 2)}`, 'success');
+            }
+            // Location validation
+            if (res.location_validation_request) {
+              logToConsole(`[${section.toUpperCase()}] Location Validation Request:\n${JSON.stringify(res.location_validation_request, null, 2)}`, 'info');
+            }
+            if (res.location_validation_response) {
+              logToConsole(`[${section.toUpperCase()}] Location Validation Response:\n${JSON.stringify(res.location_validation_response, null, 2)}`, 'success');
+            }
+            if (res.pairs_used) {
+              const pairsStr = res.pairs_used.map(p => `${p.lpn},${p.location}`).join('; ');
+              logToConsole(`[${section.toUpperCase()}] LPN,Location pairs included in message: ${pairsStr}`, 'success');
+            }
+          }
+          
+          // Loading section - OLPN validation
+          if (section === 'loading') {
+            // OLPN validation
+            if (res.olpn_validation_request) {
+              logToConsole(`[${section.toUpperCase()}] OLPN Validation Request:\n${JSON.stringify(res.olpn_validation_request, null, 2)}`, 'info');
+            }
+            if (res.olpn_validation_response) {
+              logToConsole(`[${section.toUpperCase()}] OLPN Validation Response:\n${JSON.stringify(res.olpn_validation_response, null, 2)}`, 'success');
+            }
+            if (res.pairs_used) {
+              const pairsStr = res.pairs_used.map(p => `${p.lpn},${p.shipment}`).join('; ');
+              logToConsole(`[${section.toUpperCase()}] LPN,Shipment pairs included in message: ${pairsStr}`, 'success');
+            }
+          }
+        }
+        
+        // Print the generated message LAST
+        const messageStr = JSON.stringify(res.message, null, 2);
+        logToConsole(`[${section.toUpperCase()}] Generated MHE Message:\n${messageStr}`, 'success');
+        
+        sectionStatus(section, 'Ready to send', 'success');
+      } catch (e) {
+        sectionStatus(section, `Error: ${e.message}`, 'error');
+        logToConsole(`[${section.toUpperCase()}] Error: ${e.message}`, 'error');
+        
+        // Check if auth error
+        if (e.message && (e.message.includes('Auth') || e.message.includes('token') || e.message.includes('401'))) {
+          hideUIOnAuthFailure();
+        }
+      }
+    }
+
+    // Send MHE Message
+    async function sendMessage(section) {
+      if (!token) {
+        status('Authenticate first', 'error');
+        hideUIOnAuthFailure();
+        return;
+      }
+
+      if (!generatedMessages[section]) {
+        status(`Generate ${section} message first`, 'error');
+        logToConsole(`[${section.toUpperCase()}] No message generated. Generate message first.`, 'error');
+        return;
+      }
+
+      const org = orgInput.value.trim();
+      logToConsole(`[${section.toUpperCase()}] Sending message to API...`);
+      sectionStatus(section, 'Sending...', 'info');
+
+      const messageStr = JSON.stringify(generatedMessages[section], null, 2);
+      logToConsole(`[${section.toUpperCase()}] Request payload:\n${messageStr}`);
+
+      try {
+        const res = await api(`send_${section}`, {
+          org,
+          token,
+          message: generatedMessages[section]
+        });
+        
+        if (!res.success) {
+          sectionStatus(section, res.error || 'Send failed', 'error');
+          const errorStr = JSON.stringify(res, null, 2);
+          logToConsole(`[${section.toUpperCase()}] Send failed:\n${errorStr}`, 'error');
+          
+          // Check if auth failed
+          if (res.error && (res.error.includes('Auth') || res.error.includes('token') || res.error.includes('401'))) {
+            hideUIOnAuthFailure();
+          }
+          return;
+        }
+
+        // Log the full response including status code
+        const responseData = {
+          status_code: res.status_code,
+          success: res.success,
+          response: res.response,
+          sent_payload: res.sent_payload
+        };
+        const responseStr = JSON.stringify(responseData, null, 2);
+        logToConsole(`[${section.toUpperCase()}] API Response (Status: ${res.status_code || 'N/A'}):\n${responseStr}`, res.success ? 'success' : 'error');
+        sectionStatus(section, res.success ? 'Sent successfully' : 'Send completed with errors', res.success ? 'success' : 'error');
+      } catch (e) {
+        sectionStatus(section, `Error: ${e.message}`, 'error');
+        logToConsole(`[${section.toUpperCase()}] Error: ${e.message}`, 'error');
+        
+        // Check if auth error
+        if (e.message && (e.message.includes('Auth') || e.message.includes('token') || e.message.includes('401'))) {
+          hideUIOnAuthFailure();
+        }
+      }
+    }
+
+    // Clear section status when input changes
+    ['receiving', 'putaway', 'picking', 'loading'].forEach(section => {
+      const input = document.getElementById(`${section}-input`);
+      input.addEventListener('input', () => {
+        sectionStatus(section, ''); // Clear status on input change
+      });
+    });
+
+    // Periodically check endpoint status (every 30 seconds)
+    setInterval(() => {
+      if (token) {
+        checkEndpointStatus();
+      }
+    }, 30000);
+  </script>
+</body>
+</html>
+

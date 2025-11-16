@@ -1,0 +1,1969 @@
+{
+	"info": {
+		"_postman_id": "c4b81c86-6f09-4e4d-885e-03e051e3d8f1",
+		"name": "Sidneys Collection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "18570230",
+		"_collection_link": "https://manhattan-associates-sdt.postman.co/workspace/WMOS-2020-Sales-Gold~4685e5ed-6882-48e4-af1c-58a08d8404d7/collection/18570230-c4b81c86-6f09-4e4d-885e-03e051e3d8f1?action=share&source=collection_link&creator=18570230"
+	},
+	"item": [
+		{
+			"name": "Condition Code APIs",
+			"item": [
+				{
+					"name": "Get Inventory",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							},
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/dcinventory/api/dcinventory/inventory/",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"dcinventory",
+								"api",
+								"dcinventory",
+								"inventory",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get List of Condition Codes",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							},
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/dcinventory/api/dcinventory/conditionCode",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"dcinventory",
+								"api",
+								"dcinventory",
+								"conditionCode"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Validate LPN",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							},
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"Query\": \"InventoryContainerId = 'LPNOOO34' \",\r\n  \"Size\": 1,\r\n  \"Page\": 0\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/dcinventory/api/dcinventory/inventory/search",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"dcinventory",
+								"api",
+								"dcinventory",
+								"inventory",
+								"search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Condition Codes for iLPN",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							},
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"Query\": \"InventoryContainerId = LPNOOO34 and InventoryContainerTypeId = ILPN\",\r\n  \"Page\": 0\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/dcinventory/api/dcinventory/containerCondition/search",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"dcinventory",
+								"api",
+								"dcinventory",
+								"containerCondition",
+								"search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Condition Code",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							},
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n       \r\n         \"InventoryContainerTypeId\": \"ILPN\",\r\n        \"CreatedBy\": \"sdtadmin@ss-demo\",\r\n            \"BusinessUnitId\": null,\r\n            \"Process\": null,\r\n            \"ConditionCode\": \"DM\",\r\n            \"OrgId\": \"SS-DEMO\",\r\n            \"FacilityId\": \"SS-DEMO-DM1\",\r\n            \"UpdatedBy\": \"sdtadmin@ss-demo\",\r\n            \"ConditionCompletionTimestamp\": null,\r\n            \"InventoryContainerId\": \"LPN00659\",\r\n            \"IncubationCompletionDateTime\": null\r\n        }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/dcinventory/api/dcinventory/containerCondition/save",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"dcinventory",
+								"api",
+								"dcinventory",
+								"containerCondition",
+								"save"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Condition Code",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							},
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n       \r\n         \"InventoryContainerTypeId\": \"ILPN\",\r\n        \"CreatedBy\": \"sdtadmin@ss-demo\",\r\n            \"BusinessUnitId\": null,\r\n            \"Process\": null,\r\n            \"ConditionCode\": \"DM\",\r\n            \"OrgId\": \"SS-DEMO\",\r\n            \"FacilityId\": \"SS-DEMO-DM1\",\r\n            \"UpdatedBy\": \"sdtadmin@ss-demo\",\r\n            \"ConditionCompletionTimestamp\": null,\r\n            \"InventoryContainerId\": \"LPN00659\",\r\n            \"IncubationCompletionDateTime\": null\r\n        }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/dcinventory/api/dcinventory/containerCondition/deleteContainerConditions",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"dcinventory",
+								"api",
+								"dcinventory",
+								"containerCondition",
+								"deleteContainerConditions"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Messaging APIs",
+			"item": [
+				{
+					"name": "Request Bearer Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 400\", function () {\r    //pm.response.to.have.status(200);\r    pm.expect(pm.response.code).to.be.oneOf([200,400]);\r});\r\rpm.test(\"Reponse Body is JSON\", function () {\r    pm.response.to.have.header(\"Content-Type\");\r    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");\r});\r\r\rpm.test(\"Login Successful\", function () {\r\r    var json = JSON.parse(responseBody);\r\r    if (pm.response.code == 400 ) {\r        console.error(\"Error: \" + json.error + \" Message: \" + json.error_description)\r    }\r\r    pm.expect(pm.response.text()).to.include(\"access_token\");\r    \r    var currentDate = Date.now();\r    var expires = (json.expires_in * 1000);\r    var expirationDate = new Date(  currentDate  + expires ) ;\r\r    console.info(\"Current Date: \" + new Date(currentDate).toLocaleString() + \" Expiration Date: \" + expirationDate.toLocaleString());\r\r    // DO NOT GET THE TOKEN FROM THE POST - USE THE \"Get Token\" BUTTON IN POSTMAN TO GET THE TOKEN\r    postman.setEnvironmentVariable(\"bearerToken\", json.access_token);\r    postman.setEnvironmentVariable(\"bearerToken-expirationDate\", expirationDate);\r\r});\r\r// This may appear \"Per request to stop further test runs\"\rif (pm.response.code != 200 ) {\r    postman.setNextRequest(null);\r    return;\r}\r"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.globals.unset(\"bearerToken\");",
+									"pm.globals.unset(\"expirationDate\");",
+									"console.log(\"Cleared Global Bearer Tokens\")"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic b21uaWNvbXBvbmVudC4xLjAuMDpiNHM4cmdUeWc1NVhZTnVu",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"name": "Content-Type",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "password",
+									"type": "text"
+								},
+								{
+									"key": "username",
+									"value": "{{username-admin}}",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "{{password-admin}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://{{auth-HostName}}/oauth/token",
+							"protocol": "https",
+							"host": [
+								"{{auth-HostName}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send Message",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							},
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"Content\":\"Please go to Dock Door 1\",\r\n    \"Users\":[\"invnrf@ss-demo\"]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/messenger/api/messenger/user/chat/save",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"messenger",
+								"api",
+								"messenger",
+								"user",
+								"chat",
+								"save"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Cycle Count",
+			"item": [
+				{
+					"name": "Initiate-Count",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();\r",
+									"pm.environment.set(\"CountRunId\", jsonData.data.CountRunId);\r",
+									"pm.environment.set(\"TaskId\", jsonData.data.TaskId);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							},
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "size",
+								"value": "1400",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{  \r\n    \"LocationId\": \"A1AC0123\",\r\n    \"CountMode\": \"USER_DIRECTED\",\r\n    \"CountSequence\": 1,\r\n    \"LpnTracking\": false,\r\n    \"CountCriteriaId\":\"CycleCountActiveDeferred\",\r\n     \"TransactionId\": \"Cycle Count Active\",\r\n    \"TaskIntegrationDTO\":\r\n     {\r\n      \"TransactionId\": \"Cycle Count Active\",\r\n      \"TransactionTypeId\": \"Cycle Count\",\r\n      \"LaborActivityId\": \"Cycle Count\"\r\n    }\r\n    \r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/inventory-management/api/inventory-management/count/initiateCount",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"inventory-management",
+								"api",
+								"inventory-management",
+								"count",
+								"initiateCount"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Accept-Item",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							},
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "size",
+								"value": "1400",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"LocationId\": \"A1AC0123\",\r\n    \"CountRunId\": \"{{CountRunId}}\",\r\n     \"LpnTracking\" : false,\r\n     \"ContainerId\": null,\r\n     \"TransactionId\": \"Cycle Count Active\",\r\n    \"CriteriaId\": \"Manual Cycle count task generation\",\r\n        \"ItemAttributeDTO\": {\r\n      \"Item\": \"6000108\"\r\n       },\r\n   \r\n      \"TransactionTypeId\": \"Cycle Count\"\r\n    }\r\n \r\n  \r\n\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/inventory-management/api/inventory-management/count/validateItemAndGetItemDetails",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"inventory-management",
+								"api",
+								"inventory-management",
+								"count",
+								"validateItemAndGetItemDetails"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Validate and Accept Qty",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							},
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "size",
+								"value": "1400",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"LocationId\": \"A1AC0123\",\r\n    \"CountRunId\": \"{{CountRunId}}\",\r\n    \"ContainerType\": null,\r\n     \"ContainerId\": null,\r\n      \"Quantity\": 240,\r\n       \"BlindIlpn\" :false,\r\n     \"TransactionId\": \"Cycle Count Active\",\r\n       \"TaskId\": \"{{TaskId}}\",\r\n    \"CriteriaId\": \"CycleCountActiveDeferred\",\r\n   \r\n        \"ItemAttributeDTO\": {\r\n      \"Item\": \"6000108\",\r\n      \"CompareAttributes\": false\r\n       },\r\n        \"TaskIntegrationDTO\": {\r\n      \"TransactionId\": \"Cycle Count Active\",\r\n      \"TransactionTypeId\": \"Cycle Count\",\r\n      \"LaborActivityId\": \"Cycle Count\"\r\n    }\r\n    }\r\n \r\n  \r\n\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/inventory-management/api/inventory-management/count/acceptQuantity",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"inventory-management",
+								"api",
+								"inventory-management",
+								"count",
+								"acceptQuantity"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Persist-Count",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							},
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "size",
+								"value": "1400",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"LocationId\": \"A1AC0123\",\r\n    \"CountRunId\": \"{{CountRunId}}\",\r\n    \"Quantity\": 240,\r\n    \"TaskId\": \"{{TaskId}}\",\r\n    \"ContainerId\": null,\r\n    \"ContainerType\": \"LOCATION\",\r\n     \"TransactionId\": \"Cycle Count Active\",\r\n     \"BlindIlpn\" :false,\r\n    \"CriteriaId\": \"CycleCountActiveDeferred\",\r\n        \"ItemAttributeDTO\": {\r\n      \"Item\": \"6000108\",\r\n       \"CompareAttributes\": false\r\n    },\r\n    \"TaskIntegrationDTO\": {\r\n      \"TransactionId\": \"Cycle Count Active\",\r\n      \"TransactionTypeId\": \"Cycle Count\",\r\n      \"LaborActivityId\": \"Cycle Count\"\r\n    }\r\n \r\n  \r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/inventory-management/api/inventory-management/count/quantity/persistCountDetails",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"inventory-management",
+								"api",
+								"inventory-management",
+								"count",
+								"quantity",
+								"persistCountDetails"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "End count",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							},
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "size",
+								"value": "1400",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"LocationId\": \"A1AC0123\",\r\n    \"CountRunId\": \"{{CountRunId}}\",\r\n    \"CountSequence\" :1,\r\n     \"LpnTracking\": false,\r\n   \"TransactionId\": \"Cycle Count Active\",\r\n   \"CriteriaId\": \"CycleCountActiveDeferred\",\r\n        \r\n    \"TaskIntegrationDTO\": {\r\n      \"TransactionId\": \"Cycle Count Active\",\r\n      \"TransactionTypeId\": \"Cycle Count\",\r\n      \"LaborActivityId\": \"Cycle Count\"\r\n    }\r\n \r\n  \r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/inventory-management/api/inventory-management/count/end",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"inventory-management",
+								"api",
+								"inventory-management",
+								"count",
+								"end"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Inventory APIs",
+			"item": [
+				{
+					"name": "GET Inventory Record",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							},
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/dcinventory/api/dcinventory/inventory",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"dcinventory",
+								"api",
+								"dcinventory",
+								"inventory"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Adjust Inventory Incremental",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							},
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    {\r\n      \"SourceContainerId\": \"A1AC0139\",\r\n      \"SourceContainerType\": \"LOCATION\",\r\n      \"TransactionType\": \"INVENTORY_ADJUSTMENT\",\r\n      \"ItemId\": \"5000011\",\r\n      \"Quantity\": -1,\r\n      \"PixTransactionType\": \"ADJUST_UI\",\r\n      \"PixEventName\": \"INVENTORY_ADJUSTMENT\"\r\n    }\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/dcinventory/api/dcinventory/inventory/adjustInventory",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"dcinventory",
+								"api",
+								"dcinventory",
+								"inventory",
+								"adjustInventory"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Adjust Inventory Absolute",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							},
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    {\r\n      \"SourceContainerId\": \"A1AC0139\",\r\n      \"SourceContainerType\": \"LOCATION\",\r\n      \"TransactionType\": \"INVENTORY_ADJUSTMENT\",\r\n      \"ItemId\": \"5000011\",\r\n      \"Quantity\": 49,\r\n      \"PixTransactionType\": \"ADJUST_UI\",\r\n      \"PixEventName\": \"INVENTORY_ADJUSTMENT\"\r\n    }\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/dcinventory/api/dcinventory/inventory/adjustAbsoluteQuantity",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"dcinventory",
+								"api",
+								"dcinventory",
+								"inventory",
+								"adjustAbsoluteQuantity"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "MHE Messages",
+			"item": [
+				{
+					"name": "MHE Putaway",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							},
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"EndpointId\": \"WCSTestingEndpoint\",\r\n    \"Message\": [\r\n       \"IBPUTAWAY^LPN00268^^^^R1R10305^^demoweb@ss-demo^ZGVtb3dlYkBzZHQtZGVtbw==_c2R0LWRlbW8=_c2R0LWRlbW8tZG0x^2024-02-05T14:15:45^2024-02-05T14:12:45^2024-02-05T14:15:45^20^^\"\r\n\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/device-integration/api/deviceintegration/process",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"device-integration",
+								"api",
+								"deviceintegration",
+								"process"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "MHE Receive iLPN",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							},
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"EndpointId\": \"WCSTestingEndpoint\",\r\n    \"Message\": [\r\n        \"RECEIVE^LPN01330^MHE-Receiving^\",\r\n        \"RECEIVE^LPN01331^MHE-Receiving^\"\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/device-integration/api/deviceintegration/process",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"device-integration",
+								"api",
+								"deviceintegration",
+								"process"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "MHE Loading",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							},
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"EndpointId\": \"WCSTestingEndpoint\",\r\n    \"Message\": [\r\n        \"Olpn_Loaded^^^^0000099999100002431^SHI000001118^^ZGVtb3dlYkBzcy1kZW1v_U1MtREVNTw==_U1MtREVNTy1ETTE=\",\r\n        \"Olpn_Loaded^^^^0000099999100002448^SHI000001118^^ZGVtb3dlYkBzcy1kZW1v_U1MtREVNTw==_U1MtREVNTy1ETTE=\"\r\n     \r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/device-integration/api/deviceintegration/process",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"device-integration",
+								"api",
+								"deviceintegration",
+								"process"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "MHE Picking",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearerToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "selectedLocation",
+								"value": "{{org-id}}-DM1",
+								"type": "text"
+							},
+							{
+								"key": "selectedOrganization",
+								"value": "{{org-id}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"EndpointId\": \"WCSTestingEndpoint\",\r\n     \"Message\": [\r\n        \"PICKING^DG98700028^1^PICK1909^^0000099999100011136^^^^OLPN^4000041^^^^^^^^^^3^^^^^^^^^^\"\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{env-HostName}}/device-integration/api/deviceintegration/process",
+							"protocol": "https",
+							"host": [
+								"{{env-HostName}}"
+							],
+							"path": [
+								"device-integration",
+								"api",
+								"deviceintegration",
+								"process"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Update Inventory Record",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "selectedOrganization",
+						"value": "{{org-id}}",
+						"type": "text"
+					},
+					{
+						"key": "selectedLocation",
+						"value": "{{org-id}}-DM1",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n       \r\n         \"InventoryContainerTypeId\": \"ILPN\",\r\n        \"CreatedBy\": \"sdtadmin@ss-demo\",\r\n            \"BusinessUnitId\": null,\r\n            \"Process\": null,\r\n            \"ConditionCode\": \"DM\",\r\n            \"OrgId\": \"SS-DEMO\",\r\n            \"FacilityId\": \"SS-DEMO-DM1\",\r\n            \"UpdatedBy\": \"sdtadmin@ss-demo\",\r\n            \"ConditionCompletionTimestamp\": null,\r\n            \"InventoryContainerId\": \"LPN00659\",\r\n            \"IncubationCompletionDateTime\": null\r\n        }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{env-HostName}}/dcinventory/api/dcinventory/containerCondition/save",
+					"protocol": "https",
+					"host": [
+						"{{env-HostName}}"
+					],
+					"path": [
+						"dcinventory",
+						"api",
+						"dcinventory",
+						"containerCondition",
+						"save"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET Order Record",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "selectedOrganization",
+						"value": "{{org-id}}",
+						"type": "text"
+					},
+					{
+						"key": "selectedLocation",
+						"value": "{{org-id}}-DM1",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{env-HostName}}/dcinventory/api/dcinventory/inventory/",
+					"protocol": "https",
+					"host": [
+						"{{env-HostName}}"
+					],
+					"path": [
+						"dcinventory",
+						"api",
+						"dcinventory",
+						"inventory",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Request Bearer Token - admin",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200 or 400\", function () {\r    //pm.response.to.have.status(200);\r    pm.expect(pm.response.code).to.be.oneOf([200,400]);\r});\r\rpm.test(\"Reponse Body is JSON\", function () {\r    pm.response.to.have.header(\"Content-Type\");\r    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");\r});\r\r\rpm.test(\"Login Successful\", function () {\r\r    var json = JSON.parse(responseBody);\r\r    if (pm.response.code == 400 ) {\r        console.error(\"Error: \" + json.error + \" Message: \" + json.error_description)\r    }\r\r    pm.expect(pm.response.text()).to.include(\"access_token\");\r    \r    var currentDate = Date.now();\r    var expires = (json.expires_in * 1000);\r    var expirationDate = new Date(  currentDate  + expires ) ;\r\r    console.info(\"Current Date: \" + new Date(currentDate).toLocaleString() + \" Expiration Date: \" + expirationDate.toLocaleString());\r\r    // DO NOT GET THE TOKEN FROM THE POST - USE THE \"Get Token\" BUTTON IN POSTMAN TO GET THE TOKEN\r    postman.setEnvironmentVariable(\"bearerToken\", json.access_token);\r    postman.setEnvironmentVariable(\"bearerToken-expirationDate\", expirationDate);\r\r});\r\r// This may appear \"Per request to stop further test runs\"\rif (pm.response.code != 200 ) {\r    postman.setNextRequest(null);\r    return;\r}\r"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.globals.unset(\"bearerToken\");",
+							"pm.globals.unset(\"expirationDate\");",
+							"console.log(\"Cleared Global Bearer Tokens\")"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Basic b21uaWNvbXBvbmVudC4xLjAuMDpiNHM4cmdUeWc1NVhZTnVu",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded",
+						"name": "Content-Type",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "password",
+							"type": "text"
+						},
+						{
+							"key": "username",
+							"value": "{{username-admin}}",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "{{password-admin}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://{{auth-HostName}}/oauth/token",
+					"protocol": "https",
+					"host": [
+						"{{auth-HostName}}"
+					],
+					"path": [
+						"oauth",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create ASN",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{bearerToken}}",
+						"type": "text"
+					},
+					{
+						"key": "selectedOrganization",
+						"value": "{{org-id}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "selectedLocation",
+						"value": "{{org-id}}-DM1",
+						"type": "text"
+					},
+					{
+						"key": "selectedBussinessUnit",
+						"value": "{{BU1}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"Data\": [\r\n        {\r\n            \"AsnId\": \"ASNCAR10005\",\r\n            \"AsnLevelId\": \"ITEM\",\r\n            \"AsnOriginTypeId\": \"P\",\r\n            \"AsnStatus\": \"1000\",\r\n            \"CarrierId\": \"\",\r\n            \"DestinationFacilityId\": \"SS-DEMO-DM1\",\r\n        \r\n            \"ShippedDate\": \"2025-08-20\",\r\n            \"VendorId\": \"\",\r\n            \"AsnLine\": [\r\n                {\r\n                    \"AsnId\": \"ASNCAR10005\",\r\n                    \"ActualWeight\": 0,\r\n                    \"BusinessPartnerId\": \"\",\r\n                    \"CountryOfOrigin\": null,\r\n                    \"InventoryTypeId\": null,\r\n                    \"ItemId\": \"3000163\",\r\n                    \"BatchNumber\": \"\",\r\n                    \"ManufacturingDate\": \"2025-08-20\",\r\n                    \"ManufacturingFacilityId\": \"\",\r\n                    \"OrgId\": \"{{org-id}}\",\r\n                    \"ProductStatusId\": null,\r\n                    \"InventoryAttribute1\": null,\r\n                    \"InventoryAttribute2\": null,\r\n                    \"InventoryAttribute3\": null,\r\n                    \"InventoryAttribute4\": null,\r\n                    \"InventoryAttribute5\": null,\r\n                    \"QuantityUomId\": \"unit\",\r\n                    \"ShipByDate\": \"2025-08-20\",\r\n                    \"ShippedLpnCount\": 0,\r\n                    \"ShippedQuantity\": 100,\r\n                    \"StandardLpnQuantity\": 20,\r\n                    \"StandardIlpnQuantity\": 0,\r\n                    \"StandardPackQuantity\": 0,\r\n                    \"StandardSubPackQuantity\": 0,\r\n                    \"UnitsAssignedToLpn\": 0,\r\n                    \"WeightUomId\": \"\",\r\n                    \"PurchaseOrderId\": \"\",\r\n                    \"PurchaseOrderLineId\": \"\"\r\n                }\r\n            ],\r\n            \"ActualArrivalDateTime\": \"2025-08-20T10:15:30\",\r\n            \"BusinessPartnerId\": \"\",\r\n         \r\n            \"OrgId\": \"\",\r\n            \"OriginFacilityId\": \"\",\r\n            \"ReceiptVariance\": false,\r\n            \"ReceivedLpnCount\": 0,\r\n            \"ShipmentId\": \"\",\r\n            \"ShippedLpnCount\": 0,\r\n            \"TotalReceivedQuantity\": 0,\r\n            \"TotalShippedQuantity\": 0,\r\n            \"TotalVolume\": 0,\r\n            \"TotalVolumeUomId\": \"\",\r\n            \"TotalWeight\": 0,\r\n            \"TotalWeightUomId\": \"\",\r\n            \"TrailerId\": \"\",\r\n            \"DockDoorId\": \"\"\r\n        }\r\n    ]\r\n}"
+				},
+				"url": {
+					"raw": "https://{{env-HostName}}/receiving/api/receiving/asn/bulkImport",
+					"protocol": "https",
+					"host": [
+						"{{env-HostName}}"
+					],
+					"path": [
+						"receiving",
+						"api",
+						"receiving",
+						"asn",
+						"bulkImport"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Original Order-Aggregation",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "selectedOrganization",
+						"value": "{{org-id}}",
+						"type": "text"
+					},
+					{
+						"key": "selectedLocation",
+						"value": "{{org-id}}-DM1",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"OriginalOrderId\": \"9876500015\",\n   \"Priority\": 1,\n  \"OrderPlacedDateTime\": \"2024-01-02T10:10:00.0\",\n   \"DeliveryEndDateTime\": \"2024-01-15T22:10:00.0\",\n   \"PickupEndDateTime\":\"2024-01-14T21:20:00.0\",\n   \"DeliveryStartDateTime\": \"2024-01-14T21:10:00.0\",\n   \"PickupStartDateTime\": \"2024-01-14T21:10:00.0\",\n   \"PrePackTypeId\": null,\n   \"OrderType\": \"Add On\",\n   \"DestinationFacilityId\": \"{{org-id}}-10002\",\n   \"OriginFacilityId\": \"{{org-id}}-DM1\",\n   \"OriginalOrderLine\": [\n      {\n         \"OriginalOrderId\": \"9876500015\",\n         \"OriginalOrderLineId\": \"1\",\n         \"ItemId\": \"4000040\",\n         \"OrderedQuantity\": 20,\n         \"OriginalOrderedQuantity\": 20,\n         \"Priority\": 1,\n         \"QuantityUomId\": \"Unit\"\n         \n      }\n\n   ]\n      }\n   \n\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{env-HostName}}/dcorder/api/dcorder/originalOrder",
+					"protocol": "https",
+					"host": [
+						"{{env-HostName}}"
+					],
+					"path": [
+						"dcorder",
+						"api",
+						"dcorder",
+						"originalOrder"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Work Order",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "selectedOrganization",
+						"value": "{{org-id}}",
+						"type": "text"
+					},
+					{
+						"key": "selectedLocation",
+						"value": "{{org-id}}-DM1",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"OrderId\": \"WO00000170\",\r\n    \"billToFacilityId\": null,\r\n    \"FacilityId\": \"SS-DEMO-DM1\",\r\n    \"OriginFacilityId\": \"SS-DEMO-DM1\",\r\n    \"DestinationAddress\": {\r\n        \"Address2\": \"105 TOPSHAM FAIR MALL RD\",\r\n        \"City\": \"BOSTON\",\r\n        \"State\": \"MA\",\r\n        \"Country\": \"US\",\r\n        \"PostalCode\": \"02115\"\r\n    },\r\n    \"PipelineId\": \"MFG_WorkOrder_Pipeline\",\r\n    \"MinimumStatus\": \"1000\",\r\n    \"MaximumStatus\": \"1000\",\r\n    \"Status\": \"Released\",\r\n    \"OrderType\": \"WORK_ORDER\",\r\n    \"OrderProcessTypeId\": \"Work Order\",\r\n    \"OrderLine\": [\r\n        {\r\n            \"OrderLineId\": 1,\r\n            \"OrderedQuantity\": 20,\r\n            \"ItemId\": \"1980796\",\r\n            \"RequiredShelfDays\": null,\r\n            \"ProductTypeId\": \"Finished Goods\",\r\n            \"KitQuantity\": 0,\r\n            \"QuantityUomId\": \"unit\",\r\n            \"OrderLineRequestedServices\": [\r\n                {\r\n                    \"ProvidedServiceId\": \"KittingService\",\r\n                    \"ServiceUomId\": \"ITEM\",\r\n                    \"Sequence\": 1\r\n                }\r\n            ]\r\n        }\r\n    ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{env-HostName}}/dcorder/api/dcorder/workorder",
+					"protocol": "https",
+					"host": [
+						"{{env-HostName}}"
+					],
+					"path": [
+						"dcorder",
+						"api",
+						"dcorder",
+						"workorder"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Work Order Golf Clubs",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "selectedOrganization",
+						"value": "{{org-id}}",
+						"type": "text"
+					},
+					{
+						"key": "selectedLocation",
+						"value": "{{org-id}}-DM1",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"OrderId\": \"WO00000112\",\r\n    \"billToFacilityId\": null,\r\n    \"FacilityId\": \"SS-DEMO-DM1\",\r\n    \"OriginFacilityId\": \"SS-DEMO-DM1\",\r\n    \"DestinationAddress\": {\r\n        \"Address2\": \"105 TOPSHAM FAIR MALL RD\",\r\n        \"City\": \"BOSTON\",\r\n        \"State\": \"MA\",\r\n        \"Country\": \"US\",\r\n        \"PostalCode\": \"02115\"\r\n    },\r\n    \"OrderType\": \"WORK_ORDER\",\r\n    \"OrderProcessTypeId\": \"Work Order\",\r\n    \"OrderLine\": [\r\n        {\r\n            \"OrderLineId\": 1,\r\n            \"OrderedQuantity\": 20,\r\n            \"ItemId\": \"1980796\",\r\n            \"RequiredShelfDays\": null,\r\n            \"ProductTypeId\": \"Finished Goods\",\r\n            \"KitQuantity\": 0,\r\n            \"QuantityUomId\": \"unit\",\r\n            \"OrderLineRequestedServices\": [\r\n                {\r\n                    \"ProvidedServiceId\": \"KittingService\",\r\n                    \"ServiceUomId\": \"ITEM\",\r\n                    \"Sequence\": 1\r\n                }\r\n            ]\r\n        }\r\n    ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{env-HostName}}/dcorder/api/dcorder/workorder",
+					"protocol": "https",
+					"host": [
+						"{{env-HostName}}"
+					],
+					"path": [
+						"dcorder",
+						"api",
+						"dcorder",
+						"workorder"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Appointment",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "selectedLocation",
+						"value": "{{org-id}}-DM1",
+						"type": "text"
+					},
+					{
+						"key": "selectedOrganization",
+						"value": "{{org-id}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"AppointmentId\": \"APT123456\",\r\n    \"AppointmentTypeId\": \"DROP_UNLOAD\",\r\n    \"EquipmentTypeId\": \"48FT\",\r\n    \"PreferredDateTime\": \"2025-08-26T15:15:30\",\r\n    \"Duration\": 60,\r\n    \"AppointmentStatusId\": \"3000\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{env-HostName}}/appointment/api/appointment/scheduleAppointment",
+					"protocol": "https",
+					"host": [
+						"{{env-HostName}}"
+					],
+					"path": [
+						"appointment",
+						"api",
+						"appointment",
+						"scheduleAppointment"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Find Appointment",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "selectedLocation",
+						"value": "{{org-id}}-DM1",
+						"type": "text"
+					},
+					{
+						"key": "selectedOrganization",
+						"value": "{{org-id}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"AppointmentId\": \"APT123456\",\r\n    \"AppointmentTypeId\": \"DROP_UNLOAD\",\r\n    \"EquipmentTypeId\": \"48FT\",\r\n    \"PreferredDateTime\": \"2025-08-26T15:15:30\",\r\n    \"Duration\": 60,\r\n    \"AppointmentStatusId\": \"3000\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{env-HostName}}/appointment/api/appointment/scheduleAppointment",
+					"protocol": "https",
+					"host": [
+						"{{env-HostName}}"
+					],
+					"path": [
+						"appointment",
+						"api",
+						"appointment",
+						"scheduleAppointment"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Hold Task",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "selectedLocation",
+						"value": "{{org-id}}-DM1",
+						"type": "text"
+					},
+					{
+						"key": "selectedOrganization",
+						"value": "{{org-id}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"TaskId\": \"PICK1907\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{env-HostName}}/task/api/task/heldTask",
+					"protocol": "https",
+					"host": [
+						"{{env-HostName}}"
+					],
+					"path": [
+						"task",
+						"api",
+						"task",
+						"heldTask"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ASN LPN Level with Serial Numbers-20 Srl",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "selectedOrganization",
+						"value": "{{org-id}}",
+						"type": "text"
+					},
+					{
+						"key": "selectedLocation",
+						"value": "{{org-id}}-DM1",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"name": "Content-Type",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"Data\": [\r\n        {\r\n            \"AsnId\": \"ASN000997\",\r\n            \"AsnLevelId\": \"LPN\",\r\n            \"AsnOriginTypeId\": \"S\",\r\n            \"AsnStatus\": \"1000\",\r\n            \"AsnType\": \"ASN\",\r\n            \"ActualArrivalDateTime\": \"\",\r\n            \"BusinessPartnerId\": \"\",\r\n            \"CreatedTimestamp\": \"2021-09-16T10:15:30\",\r\n            \"DestinationFacilityId\": \"{{org-id}}-DM1\",\r\n            \"FirstReceiptDateTime\": \"\",\r\n            \"LastReceiptDateTime\": \"\",\r\n            \"Lpn\": [\r\n                {\r\n                    \"AsnId\": \"ASN000997\",\r\n                    \"LpnId\": \"LPN4000981\",\r\n                    \"LpnTypeId\": \"ILPN\",\r\n                    \"ParentLpnId\": \"\",\r\n                    \"BusinessPartnerId\": \"\",\r\n                    \"CreatedTimestamp\": \"2021-09-16T10:15:30\",\r\n                    \"EstimatedWeight\": \"0\",\r\n                    \"LpnSizeType\": \"\",\r\n                    \"LpnStatus\": \"1000\",\r\n                    \"LWHUOMId\": \"\",\r\n                    \"LocationId\": \"\",\r\n                    \"FinalDestinationFacilityId\": \"\",\r\n                    \"LpnDetail\": [\r\n                        {\r\n                            \"AsnId\": \"ASN000997\",\r\n                            \"LpnId\": \"LPN4000981\",\r\n                            \"ItemId\": \"R4A430GKB\",\r\n                            \"AsnLineId\": \"\",\r\n                            \"CreatedTimestamp\": \"2021-01-25T10:15:30\",\r\n                            \"ExpiryDate\": \"2022-10-28\",\r\n                            \"ManufacturingDate\": \"2020-12-25\",\r\n                            \"OrgId\": \"\",\r\n                            \"LpnDetailAttribute\": [\r\n                                {\r\n                                     \"AttributeValue\": \"67A05242328C191503\",\r\n                                    \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n\r\n                                },\r\n                                {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"67A05242328C191503\",\r\n                             \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191504\",\r\n                             \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191505\",\r\n                              \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191506\",\r\n                              \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191507\",\r\n                            \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191508\",\r\n                            \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191509\",\r\n                          \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191510\",\r\n                              \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191511\",\r\n                              \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191512\",\r\n                            \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191513\",\r\n                             \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191514\",\r\n                              \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191515\",\r\n                            \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                 {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191516\",\r\n                             \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                 {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191517\",\r\n                           \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                 {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191518\",\r\n                             \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                 {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191519\",\r\n                              \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                }, {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191520\",\r\n                             \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                },\r\n                                {\r\n                             \"LpnId\": \"LPN4000981\",\r\n                            \"AttributeValue\": \"6A05242328C191521\",\r\n                             \"AttributeName\": \"Serial-Number\",\r\n                                    \"AttributeUom\": \"\"\r\n                                }\r\n                                                          ],\r\n                            \"PK\": null,\r\n                            \"QuantityUomId\": \"unit\",\r\n                            \"ReceivedDateTime\": \"\",\r\n                            \"RetailPrice\": \"1\",\r\n                            \"ReceivedQuantity\": \"0\",\r\n                            \"ShipByDate\": \"2022-10-28\",\r\n                            \"ShippedQuantity\": \"20\",\r\n                            \"StandardPackQuantity\": 0,\r\n                            \"StandardSubPackQuantity\": 0,\r\n                            \"UpdatedTimestamp\": \"2021-01-25T10:15:30\",\r\n                            \"PurchaseOrderId\": \"\",\r\n                            \"PurchaseOrderLineId\": \"\",\r\n                            \"BatchNumber\": \"\",\r\n                            \"CountryOfOrigin\": null,\r\n                            \"FacilityId\": \"\",\r\n                            \"InventoryAttribute1\": null,\r\n                            \"InventoryAttribute2\": null,\r\n                            \"InventoryAttribute3\": null,\r\n                            \"InventoryAttribute4\": null,\r\n                            \"InventoryAttribute5\": null,\r\n                            \"InventoryTypeId\": null,\r\n                            \"ProductStatusId\": null\r\n                        }\r\n                    ]\r\n                },\r\n                {\r\n                    \"AsnId\": \"ASN000998\",\r\n                    \"LpnId\": \"LPN3000982\",\r\n                    \"LpnTypeId\": \"ILPN\",\r\n                    \"ParentLpnId\": \"\",\r\n                    \"BusinessPartnerId\": \"\",\r\n                    \"CreatedTimestamp\": \"2021-09-16T10:15:30\",\r\n                    \"EstimatedWeight\": \"0\",\r\n                    \"LpnSizeType\": \"\",\r\n                    \"LpnStatus\": \"1000\",\r\n                    \"LWHUOMId\": \"\",\r\n                    \"LocationId\": \"\",\r\n                    \"FinalDestinationFacilityId\": \"\",\r\n                    \"LpnDetail\": [\r\n                        {\r\n                            \"AsnId\": \"ASN000998\",\r\n                            \"LpnId\": \"LPN3000982\",\r\n                            \"ItemId\": \"R4A430GKB\",\r\n                            \"AsnLineId\": \"\",\r\n                            \"CreatedTimestamp\": \"2021-01-25T10:15:30\",\r\n                            \"ExpiryDate\": \"2022-10-28\",\r\n                            \"ManufacturingDate\": \"2020-12-25\",\r\n                            \"OrgId\": \"\",\r\n                            \"LpnDetailAttribute\": [\r\n                                {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191421\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191522\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191523\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191524\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191525\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191526\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191527\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191528\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191529\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191530\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191531\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191532\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191533\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                   {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191534\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                 {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191535\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                 {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191536\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                 {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191537\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                 {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191538\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                }, {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191539\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                },\r\n                                {\r\n                             \"LpnId\": \"LPN3000982\",\r\n                            \"AttributeValue\": \"5A05242328C191540\",\r\n                            \"AttributeName\": \"SERIAL_NUMBER\",\r\n                            \"AttributeId\": \"f1\"\r\n                                }\r\n                                                          ],\r\n                            \"PK\": null,\r\n                            \"QuantityUomId\": \"unit\",\r\n                            \"ReceivedDateTime\": \"\",\r\n                            \"RetailPrice\": \"1\",\r\n                            \"ReceivedQuantity\": \"0\",\r\n                            \"ShipByDate\": \"2022-10-28\",\r\n                            \"ShippedQuantity\": \"20\",\r\n                            \"StandardPackQuantity\": 0,\r\n                            \"StandardSubPackQuantity\": 0,\r\n                            \"UpdatedTimestamp\": \"2021-01-25T10:15:30\",\r\n                            \"PurchaseOrderId\": \"\",\r\n                            \"PurchaseOrderLineId\": \"\",\r\n                            \"BatchNumber\": \"\",\r\n                            \"CountryOfOrigin\": null,\r\n                            \"FacilityId\": \"\",\r\n                            \"InventoryAttribute1\": null,\r\n                            \"InventoryAttribute2\": null,\r\n                            \"InventoryAttribute3\": null,\r\n                            \"InventoryAttribute4\": null,\r\n                            \"InventoryAttribute5\": null,\r\n                            \"InventoryTypeId\": null,\r\n                            \"ProductStatusId\": null\r\n                        }\r\n                    ]\r\n                }\r\n                             \r\n            ],\r\n            \"OrgId\": \"\",\r\n            \"OriginFacilityId\": \"950001\",\r\n            \"ReceiptVariance\": \"false\",\r\n            \"ReceivedLpnCount\": \"0\",\r\n            \"ShipmentId\": \"\",\r\n            \"TotalReceivedQuantity\": 0,\r\n            \"TotalShippedQuantity\": 4,\r\n            \"TotalVolume\": \"0\",\r\n            \"TotalVolumeUomId\": \"\",\r\n            \"TotalWeight\": \"0\",\r\n            \"UpdatedTimestamp\": \"2021-01-25T10:15:30\"\r\n        }\r\n    ]\r\n}\r\n"
+				},
+				"url": {
+					"raw": "https://{{env-HostName}}/receiving/api/receiving/asn/bulkImport",
+					"protocol": "https",
+					"host": [
+						"{{env-HostName}}"
+					],
+					"path": [
+						"receiving",
+						"api",
+						"receiving",
+						"asn",
+						"bulkImport"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Trailer-CheckIn",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "selectedOrganization",
+						"value": "{{org-id}}",
+						"type": "text"
+					},
+					{
+						"key": "selectedLocation",
+						"value": "{{org-id}}-DM1",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"YardId\": \"{{org-id}}-DM1\",\n  \"VisitType\": \"DROP_UNLOAD\",\n  \"TrailerInfo\": {\n    \"CarrierId\": \"SWFT\",\n    \"TrailerId\": \"TRL30134\",\n    \"EquipmentTypeId\": \"48FT\",\n    \"TrailerConditionId\": \"GOOD\"\n  },\n  \"LocationId\": \"10007\",\n  \"TrailerContents\": [\n    {\n      \"Asn\": \"ASN4100159\"\n    }\n  ],\n  \"Asn\": [\n    {\n      \"AsnId\": \"ASN4100159\",\n      \"DestinationFacilityId\": \"{{org-id}}-DM1\",\n      \"AsnDetails\": [\n        {\n          \"ClimateControlId\": \"Dry\",\n          \"ProductClassId\": \"Standard\",\n          \"Conveyable\": true,\n          \"uom\": \"Unit\",\n          \"Quantity\": \"40\"\n        }\n      ]\n    }\n  ],\n  \"AppointmentInfo\": {\n    \"AppointmentId\": \"APPT4222\",\n    \"AppointmentTypeId\": \"Drop Unload\",\n    \"AppointmentScheduleTime\": \"2024-05-06T10:00:00\",\n    \"AppointmentStatusId\": \"Scheduled\",\n    \"PlannedDockId\": \"\",\n    \"PlannedDockDoorId\": \"\"\n  }\n}\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{env-HostName}}/yard-management/api/yard-management/transaction/trailer/checkIn",
+					"protocol": "https",
+					"host": [
+						"{{env-HostName}}"
+					],
+					"path": [
+						"yard-management",
+						"api",
+						"yard-management",
+						"transaction",
+						"trailer",
+						"checkIn"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Trailer-CheckIn Copy",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "selectedOrganization",
+						"value": "{{org-id}}",
+						"type": "text"
+					},
+					{
+						"key": "selectedLocation",
+						"value": "{{org-id}}-DM1",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "\n{\n  \"AppointmentInfo\": {\n    \"AppointmentId\": \"APPT4267\",\n    \"AppointmentTypeId\": \"DROP_UNLOAD\"\n  },\n  \"VisitType\": \"DROP_UNLOAD\",\n  \"TrailerInfo\": {\n    \"CarrierId\": \"PFLT\",\n    \"TrailerId\": \"TRL30179\",\n    \"EquipmentTypeId\": \"48FT\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{env-HostName}}/yard-management/api/yard-management/transaction/trailer/checkIn",
+					"protocol": "https",
+					"host": [
+						"{{env-HostName}}"
+					],
+					"path": [
+						"yard-management",
+						"api",
+						"yard-management",
+						"transaction",
+						"trailer",
+						"checkIn"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "View Document",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "selectedOrganization",
+						"value": "{{org-id}}",
+						"type": "text"
+					},
+					{
+						"key": "selectedLocation",
+						"value": "{{org-id}}-DM1",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "size",
+						"value": "1400",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "\r\n{\r\n  \"DocumentCategoryId\": \"DCT000000007\",\r\n  \"FileName\": \"Container2.jpg\",\r\n  \"ObjectId\": \"ASN00250\",\r\n  \"ObjectTypeId\": \"ASN\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{env-HostName}}/document-manager/api/document-manager/view/document",
+					"protocol": "https",
+					"host": [
+						"{{env-HostName}}"
+					],
+					"path": [
+						"document-manager",
+						"api",
+						"document-manager",
+						"view",
+						"document"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
