@@ -465,20 +465,11 @@
           </h2>
         </div>
 
-        <!-- Right side: Gear icon and Endpoint Status stacked vertically -->
-        <div style="position: absolute; top: 0.75rem; right: 1rem; display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; z-index: 999;">
+        <!-- Right side: Gear icon only -->
+        <div style="position: absolute; top: 0.75rem; right: 1rem; z-index: 999;">
           <!-- Gear icon - aligned with title center -->
           <div style="height: 1.5rem; display: flex; align-items: center; justify-content: center;">
             <!-- Gear icon button is positioned here -->
-          </div>
-          <!-- Endpoint Status below gear icon -->
-          <div class="endpoint-status" id="endpointStatusContainer">
-            <span class="endpoint-status-label">Endpoint Status:</span>
-            <div class="status-indicator" id="statusIndicator">
-              <span class="status-icon online" id="endpointStatusIcon">✓</span>
-              <span class="status-text online" id="endpointStatusText">Online</span>
-            </div>
-            <span class="tooltip" id="statusTooltip"></span>
           </div>
         </div>
 
@@ -489,6 +480,15 @@
             <input type="text" id="org" class="form-control" placeholder="Enter ORG" maxlength="20" style="width: 200px; max-width: 100%;" />
             <button id="authBtn" class="btn btn-success px-3">Authenticate</button>
             <div class="status ms-auto" id="status" style="font-size: 0.9em;">Enter ORG and press Enter to authenticate</div>
+            <!-- Endpoint Status aligned with ORG textbox -->
+            <div class="endpoint-status ms-3" id="endpointStatusContainer">
+              <span class="endpoint-status-label">Endpoint Status:</span>
+              <div class="status-indicator" id="statusIndicator">
+                <span class="status-icon online" id="endpointStatusIcon">✓</span>
+                <span class="status-text online" id="endpointStatusText">Online</span>
+              </div>
+              <span class="tooltip" id="statusTooltip"></span>
+            </div>
           </div>
         </div>
       </div>
