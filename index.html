@@ -709,7 +709,7 @@
       return `${MHE_JOURNAL_BASE_URL}?${params.toString()}`;
     }
     
-    // Build inventory URL for Location hyperlinks
+    // Build inventory URL for Location hyperlinks (Putaway only)
     function buildInventoryURL(location) {
       const org = orgInput.value.trim();
       if (!org || !location) {
@@ -721,7 +721,8 @@
         'M_Screen': 'inventory',
         'M_Organization': org,
         'M_Location': locationParam,
-        'LocationBarcode': String(location)
+        'LocationId': String(location),
+        'IncludeEmptyLocations': 'true'
       });
       
       return `${MHE_JOURNAL_BASE_URL}?${params.toString()}`;
