@@ -473,22 +473,26 @@
           </div>
         </div>
 
-        <!-- ORG -->
-        <div id="authSection" class="mb-2">
-          <div class="d-flex align-items-center gap-2">
-            <label class="form-label mb-0" style="min-width: 50px;">ORG:</label>
-            <input type="text" id="org" class="form-control" placeholder="Enter ORG" maxlength="20" style="width: 200px; max-width: 100%;" />
-            <button id="authBtn" class="btn btn-success px-3">Authenticate</button>
-            <div class="status ms-auto" id="status" style="font-size: 0.9em;">Enter ORG and press Enter to authenticate</div>
-            <!-- Endpoint Status aligned with ORG textbox -->
-            <div class="endpoint-status ms-3" id="endpointStatusContainer">
-              <span class="endpoint-status-label">Endpoint Status:</span>
-              <div class="status-indicator" id="statusIndicator">
-                <span class="status-icon online" id="endpointStatusIcon">✓</span>
-                <span class="status-text online" id="endpointStatusText">Online</span>
-              </div>
-              <span class="tooltip" id="statusTooltip"></span>
+        <!-- ORG and Endpoint Status Row -->
+        <div class="mb-2" style="position: relative;">
+          <!-- ORG Auth Section -->
+          <div id="authSection">
+            <div class="d-flex align-items-center gap-2">
+              <label class="form-label mb-0" style="min-width: 50px;">ORG:</label>
+              <input type="text" id="org" class="form-control" placeholder="Enter ORG" maxlength="20" style="width: 200px; max-width: 100%;" />
+              <button id="authBtn" class="btn btn-success px-3">Authenticate</button>
+              <div class="status ms-auto" id="status" style="font-size: 0.9em;">Enter ORG and press Enter to authenticate</div>
             </div>
+          </div>
+          
+          <!-- Endpoint Status - Always visible, aligned with ORG textbox -->
+          <div class="endpoint-status" id="endpointStatusContainer" style="position: absolute; right: 1rem; top: 0; display: flex; align-items: center;">
+            <span class="endpoint-status-label">Endpoint Status:</span>
+            <div class="status-indicator" id="statusIndicator">
+              <span class="status-icon online" id="endpointStatusIcon">✓</span>
+              <span class="status-text online" id="endpointStatusText">Online</span>
+            </div>
+            <span class="tooltip" id="statusTooltip"></span>
           </div>
         </div>
       </div>
