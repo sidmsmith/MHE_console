@@ -765,7 +765,7 @@
       
       const location = `${org}-DM1`;
       const params = new URLSearchParams({
-        'M_Screen': 'shipment',
+        'M_Screen': 'DCSShipment',
         'M_Organization': org,
         'M_Location': location,
         'ShipmentId': String(shipment)
@@ -1656,7 +1656,7 @@
         
         logToConsole(`[${section.toUpperCase()}] API Response (Status: ${res.status_code || 'N/A'}):\n${responseStr}`, res.success ? 'success' : 'error');
         
-        // Extract MessageId from response and add clickable link
+        // Extract MessageId from response and add clickable link (works for all sections: Receiving, Putaway, Loading, etc.)
         if (res.success && res.response) {
           let messageId = null;
           
