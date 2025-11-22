@@ -663,12 +663,11 @@
     // Base URL for MHE Journal
     const MHE_JOURNAL_BASE_URL = 'https://salep.sce.manh.com/udc/dm/linkTo';
     
-    function buildMHEJournalURL() {
+    function buildMHEJournalURL(messageId = null) {
       const org = orgInput.value.trim();
       if (!org) {
         // If no org, disable the link
-        mheJournalLink.href = '#';
-        return;
+        return '#';
       }
       
       // Build URL with dynamic org and location
@@ -680,11 +679,20 @@
         'M_Location': location
       });
       
-      mheJournalLink.href = `${MHE_JOURNAL_BASE_URL}?${params.toString()}`;
+      // Add MessageId if provided
+      if (messageId) {
+        params.set('M_MessageId', messageId);
+      }
+      
+      return `${MHE_JOURNAL_BASE_URL}?${params.toString()}`;
+    }
+    
+    function buildMHEJournalLinkForHeader() {
+      mheJournalLink.href = buildMHEJournalURL();
     }
     
     function showMHEJournalLink() {
-      buildMHEJournalURL();
+      buildMHEJournalLinkForHeader();
       mheJournalLinkContainer.style.display = 'flex';
     }
     
@@ -695,12 +703,12 @@
     // Update URL when org changes (only if link is visible)
     orgInput.addEventListener('input', () => {
       if (token) {
-        buildMHEJournalURL();
+        buildMHEJournalLinkForHeader();
       }
     });
     orgInput.addEventListener('change', () => {
       if (token) {
-        buildMHEJournalURL();
+        buildMHEJournalLinkForHeader();
       }
     });
 
@@ -1375,6 +1383,48 @@
         };
         const responseStr = JSON.stringify(responseData, null, 2);
         logToConsole(`[${section.toUpperCase()}] API Response (Status: ${res.status_code || 'N/A'}):\n${responseStr}`, res.success ? 'success' : 'error');
+        
+        // Extract MessageId from response and add clickable link
+        if (res.success && res.response) {
+          let messageId = null;
+          
+          // Try to extract MessageId from response (could be JSON object or string)
+          if (typeof res.response === 'object' && res.response !== null) {
+            // Check various possible MessageId field names
+            messageId = res.response.MessageId || res.response.messageId || res.response.MessageID || 
+                       res.response.message_id || res.response.id || res.response.Id;
+            
+            // If response has a nested structure, check common patterns
+            if (!messageId && res.response.data) {
+              messageId = res.response.data.MessageId || res.response.data.messageId || 
+                          res.response.data.MessageID || res.response.data.message_id;
+            }
+          } else if (typeof res.response === 'string') {
+            // Try to parse as JSON if it's a string
+            try {
+              const parsedResponse = JSON.parse(res.response);
+              messageId = parsedResponse.MessageId || parsedResponse.messageId || 
+                          parsedResponse.MessageID || parsedResponse.message_id ||
+                          parsedResponse.id || parsedResponse.Id;
+            } catch (e) {
+              // Not JSON, check if MessageId is in the string
+              const messageIdMatch = res.response.match(/MessageId["\s:=]+([^"}\s,]+)/i);
+              if (messageIdMatch) {
+                messageId = messageIdMatch[1];
+              }
+            }
+          }
+          
+          // If MessageId found, add clickable link
+          if (messageId) {
+            // Escape MessageId for safe HTML insertion
+            const escapedMessageId = String(messageId).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+            const journalUrl = buildMHEJournalURL(String(messageId));
+            const messageIdLink = `<a href="${journalUrl}" target="_blank" style="color: var(--primary); text-decoration: underline; font-weight: 500;">${escapedMessageId}</a>`;
+            logToConsole(`[${section.toUpperCase()}] Message ID: ${messageIdLink}`, 'success');
+          }
+        }
+        
         sectionStatus(section, res.success ? 'Sent successfully' : 'Send completed with errors', res.success ? 'success' : 'error');
       } catch (e) {
         sectionStatus(section, `Error: ${e.message}`, 'error');
