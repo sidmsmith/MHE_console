@@ -483,7 +483,7 @@
         <!-- Title - Centered independently with wrapper for alignment -->
         <div style="position: relative; display: flex; align-items: center; justify-content: center; min-height: 2rem; margin-bottom: 0.5rem;">
           <h2 class="text-center mb-0" style="flex: 1;">
-            <a href="#" id="mheJournalLink" class="text-decoration-none" title="Open MHE Journal" target="_blank" style="color: var(--primary); cursor: pointer;">MHE Console v2.1.0</a>
+            <a href="#" id="titleLink" class="text-decoration-none" title="MHE Console" target="_blank" style="color: var(--primary); cursor: pointer;">MHE Console v2.1.0</a>
           </h2>
         </div>
 
@@ -509,7 +509,7 @@
           
           <!-- MHE Journal Link - Centered horizontally, aligned vertically with ORG and Endpoint Status -->
           <div id="mheJournalLinkContainer" style="position: absolute; left: 50%; transform: translateX(-50%); top: 0.25rem; display: none; align-items: center;">
-            <a href="#" id="mheJournalLink" target="_blank" class="mhe-journal-link" style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--primary); text-decoration: none; font-size: 0.9em; font-weight: 500;">
+            <a href="#" id="mheJournalLinkActual" target="_blank" class="mhe-journal-link" style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--primary); text-decoration: none; font-size: 0.9em; font-weight: 500;">
               <i class="fas fa-external-link-alt"></i>
               <span>Open MHE Journal</span>
             </a>
@@ -653,7 +653,7 @@
     const mainUI = document.getElementById('mainUI');
     const statusEl = document.getElementById('status');
     const consoleOutput = document.getElementById('consoleOutput');
-    const mheJournalLink = document.getElementById('mheJournalLink');
+    const mheJournalLink = document.getElementById('mheJournalLinkActual');
     const mheJournalLinkContainer = document.getElementById('mheJournalLinkContainer');
 
     let token = null;
