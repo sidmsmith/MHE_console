@@ -1425,8 +1425,7 @@
       logToConsole(`[${section.toUpperCase()}] Sending message to API...`);
       sectionStatus(section, 'Sending...', 'info');
 
-      // For Receiving and Putaway, format message with LPN hyperlinks
-      const messageStr = formatMessageWithLpnHyperlinks(generatedMessages[section], section);
+      const messageStr = JSON.stringify(generatedMessages[section], null, 2);
       logToConsole(`[${section.toUpperCase()}] Request payload:\n${messageStr}`);
 
       try {
@@ -1455,7 +1454,26 @@
           response: res.response,
           sent_payload: res.sent_payload
         };
-        const responseStr = JSON.stringify(responseData, null, 2);
+        
+        // For Receiving and Putaway, format sent_payload with LPN hyperlinks
+        let responseStr;
+        if ((section === 'receiving' || section === 'putaway') && res.sent_payload) {
+          // Stringify the response without sent_payload first
+          const responseWithoutPayload = {
+            status_code: res.status_code,
+            success: res.success,
+            response: res.response
+          };
+          const responseStrBase = JSON.stringify(responseWithoutPayload, null, 2);
+          // Format sent_payload with LPN hyperlinks
+          const sentPayloadStr = formatMessageWithLpnHyperlinks(res.sent_payload, section);
+          // Combine: remove the closing brace, add sent_payload, then close
+          responseStr = responseStrBase.slice(0, -1) + ',\n  "sent_payload": ' + sentPayloadStr + '\n}';
+        } else {
+          // For other sections, use normal JSON stringify
+          responseStr = JSON.stringify(responseData, null, 2);
+        }
+        
         logToConsole(`[${section.toUpperCase()}] API Response (Status: ${res.status_code || 'N/A'}):\n${responseStr}`, res.success ? 'success' : 'error');
         
         // Extract MessageId from response and add clickable link
