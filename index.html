@@ -679,9 +679,9 @@
         'M_Location': location
       });
       
-      // Add MessageId if provided
+      // Add MessageId if provided (without M_ prefix)
       if (messageId) {
-        params.set('M_MessageId', messageId);
+        params.set('MessageId', messageId);
       }
       
       return `${MHE_JOURNAL_BASE_URL}?${params.toString()}`;
