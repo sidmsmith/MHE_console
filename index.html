@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MHE Console v2.0.0</title>
+  <title>MHE Console v2.1.0</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <style>
     :root {
@@ -17,6 +18,34 @@
       --blue-select: #339af0;
       --success: #28a745;
       --primary: #0d6efd;
+    }
+    
+    /* Dark theme (existing theme) */
+    :root.theme-dark {
+      --bg-dark: #121212;
+      --card-bg: #1e1e1e;
+      --input-bg: #2d2d2d;
+      --border: #333;
+      --text: #e0e0e0;
+      --red-text: #ff6b6b;
+      --blue-select: #339af0;
+      --success: #28a745;
+      --primary: #0d6efd;
+    }
+    
+    /* Manhattan theme */
+    :root.theme-manhattan {
+      --bg-dark: rgb(45, 47, 59);
+      --card-bg: #484e5e;
+      --input-bg: #282c34;
+      --border: #333;
+      --text: #495057;
+      --red-text: #ff6b6b;
+      --blue-select: #339af0;
+      --success: hsl(142.1 76.2% 36.3%);
+      --primary: #3B82F6;
+      --secondary: #6c757d;
+      --shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
 
     * {
@@ -96,6 +125,38 @@
     h2 { color: var(--primary); margin: 0; font-size: 1.5rem; }
     h2 a { transition: opacity 0.2s; }
     h2 a:hover { opacity: 0.8; text-decoration: underline !important; }
+    
+    /* Theme selector gear icon */
+    .theme-selector-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 50%;
+      transition: all 0.2s;
+      z-index: 1000;
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+    
+    .theme-selector-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: rotate(90deg);
+    }
+    
+    :root.theme-manhattan .theme-selector-btn {
+      color: #bbbbbb;
+    }
+    
+    :root.theme-manhattan .theme-selector-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
 
     /* HIDDEN UNTIL AUTH */
     #mainUI { display: none; }
@@ -232,6 +293,36 @@
       transform: rotate(-90deg);
     }
 
+    /* Modal styling */
+    .modal-content {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    
+    .modal-header {
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .modal-title {
+      color: var(--text);
+    }
+    
+    .list-group-item {
+      background: var(--input-bg);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    
+    .list-group-item:hover {
+      background: #333;
+    }
+    
+    .list-group-item.active {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
     /* ENDPOINT STATUS INDICATOR - Icon-based (Option 3) */
     .endpoint-status {
       display: flex;
@@ -357,13 +448,16 @@
   <div class="main-container">
     <!-- HEADER -->
     <div class="header-section">
-      <div class="main-card">
+      <div class="main-card" style="position: relative;">
+        <button class="theme-selector-btn" id="themeSelectorBtn" title="Select Theme">
+          <i class="fas fa-cog"></i>
+        </button>
         <h2 class="text-center mb-2">
-          <a href="#" id="mheJournalLink" class="text-decoration-none" title="Open MHE Journal" target="_blank" style="color: var(--primary); cursor: pointer;">MHE Console v2.0.0</a>
+          <a href="#" id="mheJournalLink" class="text-decoration-none" title="Open MHE Journal" target="_blank" style="color: var(--primary); cursor: pointer;">MHE Console v2.1.0</a>
         </h2>
 
         <!-- ORG -->
-        <div class="mb-2">
+        <div id="authSection" class="mb-2">
           <div class="d-flex align-items-center gap-2">
             <label class="form-label mb-0" style="min-width: 50px;">ORG:</label>
             <input type="text" id="org" class="form-control" placeholder="Enter ORG" maxlength="20" style="width: 200px; max-width: 100%;" />
@@ -485,6 +579,21 @@
     </div>
   </div>
 
+  <!-- THEME SELECTOR MODAL -->
+  <div class="modal fade" id="themeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Select Theme</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="list-group" id="themeList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // DOM Elements
     const orgInput = document.getElementById('org');
@@ -532,8 +641,28 @@
     // Initialize URL on load
     buildMHEJournalURL();
 
-    // Ensure ORG is always blank on load (security)
-    orgInput.value = '';
+    // URL Parameters for cross-app integration
+    const urlParams = new URLSearchParams(window.location.search);
+    const locationParam = urlParams.get('Location');
+    const organizationParam = urlParams.get('Organization');
+    const businessUnitParam = urlParams.get('BusinessUnit');
+    
+    // Store URL parameters for use
+    const urlLocation = locationParam || null;
+    const urlOrg = organizationParam || null;
+    const urlBusinessUnit = businessUnitParam || null;
+    
+    // Ensure ORG is blank on load (security) unless from URL
+    if (urlOrg) {
+      orgInput.value = urlOrg.trim();
+      // Hide auth section when auto-authenticating
+      const authSection = document.getElementById('authSection');
+      if (authSection) {
+        authSection.style.display = 'none';
+      }
+    } else {
+      orgInput.value = '';
+    }
     
     // Hide mainUI initially and on any auth failure
     mainUI.style.display = 'none';
@@ -783,10 +912,111 @@
       }).then(r => r.json());
     }
 
+    // ===== THEME SYSTEM =====
+    const THEME_STORAGE_KEY = 'mhe_console_theme';
+    const themeSelectorBtn = document.getElementById('themeSelectorBtn');
+    const themeModal = new bootstrap.Modal(document.getElementById('themeModal'));
+    const themeList = document.getElementById('themeList');
+    
+    const themes = {
+      dark: {
+        name: 'Dark',
+        rootClass: 'theme-dark'
+      },
+      manhattan: {
+        name: 'Manhattan',
+        rootClass: 'theme-manhattan'
+      }
+    };
+    
+    // Load saved theme or default to dark
+    function loadTheme() {
+      const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+      applyTheme(savedTheme);
+    }
+    
+    // Apply theme
+    function applyTheme(themeName) {
+      const root = document.documentElement;
+      const theme = themes[themeName] || themes.dark;
+      
+      // Remove all theme classes
+      Object.values(themes).forEach(t => {
+        if (t.rootClass) {
+          root.classList.remove(t.rootClass);
+        }
+      });
+      
+      // Apply selected theme
+      if (theme.rootClass) {
+        root.classList.add(theme.rootClass);
+      }
+      
+      // Save to localStorage
+      localStorage.setItem(THEME_STORAGE_KEY, themeName);
+    }
+    
+    // Render theme list in modal
+    function renderThemeList() {
+      themeList.innerHTML = '';
+      const currentTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+      
+      Object.entries(themes).forEach(([key, theme]) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = `list-group-item list-group-item-action ${key === currentTheme ? 'active' : ''}`;
+        item.textContent = theme.name;
+        item.onclick = () => {
+          applyTheme(key);
+          themeModal.hide();
+        };
+        themeList.appendChild(item);
+      });
+    }
+    
+    // Theme selector button click handler
+    if (themeSelectorBtn) {
+      themeSelectorBtn.onclick = () => {
+        renderThemeList();
+        themeModal.show();
+      };
+      
+      // Ensure button is always visible after theme changes
+      const observer = new MutationObserver(() => {
+        if (themeSelectorBtn) {
+          themeSelectorBtn.style.display = 'block';
+          themeSelectorBtn.style.visibility = 'visible';
+        }
+      });
+      
+      // Observe theme class changes on root element
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
+    
+    // Load theme on page load
+    loadTheme();
+    
+    // Ensure gear icon is visible after theme loads
+    if (themeSelectorBtn) {
+      setTimeout(() => {
+        themeSelectorBtn.style.display = 'block';
+        themeSelectorBtn.style.visibility = 'visible';
+      }, 100);
+    }
+
     // App opened
     window.addEventListener('load', () => {
       api('app_opened', {});
-      orgInput.focus();
+      
+      // Auto-authenticate if Organization parameter is provided in URL
+      if (urlOrg) {
+        authenticate();
+      } else {
+        orgInput.focus();
+      }
     });
 
     // Auth
