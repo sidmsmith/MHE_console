@@ -738,6 +738,42 @@
       return `${MHE_JOURNAL_BASE_URL}?${params.toString()}`;
     }
     
+    // Build olpn URL for OLPN hyperlinks (Loading only)
+    function buildOLpnURL(olpn) {
+      const org = orgInput.value.trim();
+      if (!org || !olpn) {
+        return '#';
+      }
+      
+      const location = `${org}-DM1`;
+      const params = new URLSearchParams({
+        'M_Screen': 'olpn',
+        'M_Organization': org,
+        'M_Location': location,
+        'OlpnId': String(olpn)
+      });
+      
+      return `${MHE_JOURNAL_BASE_URL}?${params.toString()}`;
+    }
+    
+    // Build shipment URL for Shipment hyperlinks (Loading only)
+    function buildShipmentURL(shipment) {
+      const org = orgInput.value.trim();
+      if (!org || !shipment) {
+        return '#';
+      }
+      
+      const location = `${org}-DM1`;
+      const params = new URLSearchParams({
+        'M_Screen': 'shipment',
+        'M_Organization': org,
+        'M_Location': location,
+        'ShipmentId': String(shipment)
+      });
+      
+      return `${MHE_JOURNAL_BASE_URL}?${params.toString()}`;
+    }
+    
     // Extract LPNs from input field for Receiving or Putaway
     function extractLPNsFromInput(section) {
       const input = document.getElementById(`${section}-input`).value.trim();
@@ -779,52 +815,127 @@
       }).filter(location => location && location.length > 0);
     }
     
-    // Format message JSON string with LPN hyperlinks for Receiving and Putaway, and Location hyperlinks for Putaway
-    function formatMessageWithLpnHyperlinks(messageObj, section) {
-      if (!messageObj || (section !== 'receiving' && section !== 'putaway')) {
-        return JSON.stringify(messageObj, null, 2);
+    // Extract OLPNs from input field for Loading
+    function extractOLPNsFromInput(section) {
+      if (section !== 'loading') {
+        return [];
       }
       
-      // Extract LPNs from input
-      const lpns = extractLPNsFromInput(section);
-      // Extract Locations from input (only for Putaway)
-      const locations = section === 'putaway' ? extractLocationsFromInput(section) : [];
+      const input = document.getElementById(`${section}-input`).value.trim();
+      if (!input) {
+        return [];
+      }
       
-      if (lpns.length === 0 && locations.length === 0) {
+      // Loading: OLPNs separated by spaces, commas, or semicolons
+      return input.split(/[\s,;]+/).filter(olpn => olpn.trim().length > 0).map(olpn => olpn.trim());
+    }
+    
+    // Extract Shipments from message object for Loading
+    function extractShipmentsFromMessage(messageObj, section) {
+      if (section !== 'loading' || !messageObj || !messageObj.Message || !Array.isArray(messageObj.Message)) {
+        return [];
+      }
+      
+      const shipments = [];
+      // Message format: "Olpn_Loaded^^^^{olpn}^{shipment}^^..."
+      messageObj.Message.forEach(msgStr => {
+        const parts = msgStr.split('^');
+        // Shipment is typically the 6th part (index 5) in "Olpn_Loaded^^^^{olpn}^{shipment}^^..."
+        if (parts.length > 5 && parts[5]) {
+          shipments.push(parts[5]);
+        }
+      });
+      
+      return shipments.filter(shipment => shipment && shipment.length > 0);
+    }
+    
+    // Format message JSON string with hyperlinks for Receiving, Putaway, and Loading
+    function formatMessageWithLpnHyperlinks(messageObj, section) {
+      if (!messageObj || (section !== 'receiving' && section !== 'putaway' && section !== 'loading')) {
         return JSON.stringify(messageObj, null, 2);
       }
       
       // First, stringify the message
       let messageStr = JSON.stringify(messageObj, null, 2);
       
-      // Replace each LPN in the stringified JSON with a hyperlink
-      // The LPN appears inside the message strings like "RECEIVE^LPN^..." or "IBPUTAWAY^LPN^..."
-      lpns.forEach(lpn => {
-        // Escape special regex characters in LPN
-        const escapedLpn = lpn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // Match the LPN inside the message string (between ^ characters or at start/end)
-        // Pattern: ^LPN^ or ^LPN (at end) or LPN^ (at start after command)
-        const regex = new RegExp(`(\\^)${escapedLpn}(\\^|"|$)`, 'g');
-        const journalUrl = buildILpnURL(lpn);
-        const escapedLpnHtml = String(lpn).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        const hyperlink = `<a href="${journalUrl}" target="_blank" style="text-decoration: underline;">${escapedLpnHtml}</a>`;
-        // Replace the LPN with the hyperlink, preserving the delimiters
-        messageStr = messageStr.replace(regex, `$1${hyperlink}$2`);
-      });
+      // For Receiving and Putaway: Extract LPNs and Locations from input
+      if (section === 'receiving' || section === 'putaway') {
+        const lpns = extractLPNsFromInput(section);
+        const locations = section === 'putaway' ? extractLocationsFromInput(section) : [];
+        
+        if (lpns.length === 0 && locations.length === 0) {
+          return messageStr;
+        }
+        
+        // Replace each LPN in the stringified JSON with a hyperlink
+        // The LPN appears inside the message strings like "RECEIVE^LPN^..." or "IBPUTAWAY^LPN^..."
+        lpns.forEach(lpn => {
+          // Escape special regex characters in LPN
+          const escapedLpn = lpn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          // Match the LPN inside the message string (between ^ characters or at start/end)
+          // Pattern: ^LPN^ or ^LPN (at end) or LPN^ (at start after command)
+          const regex = new RegExp(`(\\^)${escapedLpn}(\\^|"|$)`, 'g');
+          const journalUrl = buildILpnURL(lpn);
+          const escapedLpnHtml = String(lpn).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+          const hyperlink = `<a href="${journalUrl}" target="_blank" style="text-decoration: underline;">${escapedLpnHtml}</a>`;
+          // Replace the LPN with the hyperlink, preserving the delimiters
+          messageStr = messageStr.replace(regex, `$1${hyperlink}$2`);
+        });
+        
+        // For Putaway, also replace Locations with hyperlinks
+        // Location appears in message string like "IBPUTAWAY^LPN^^^^Location^..."
+        if (section === 'putaway' && locations.length > 0) {
+          locations.forEach(location => {
+            // Escape special regex characters in Location
+            const escapedLocation = location.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            // Match the Location inside the message string (between ^ characters)
+            // Pattern: ^Location^ or ^Location (at end)
+            const regex = new RegExp(`(\\^)${escapedLocation}(\\^|"|$)`, 'g');
+            const inventoryUrl = buildInventoryURL(location);
+            const escapedLocationHtml = String(location).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            const hyperlink = `<a href="${inventoryUrl}" target="_blank" style="text-decoration: underline;">${escapedLocationHtml}</a>`;
+            // Replace the Location with the hyperlink, preserving the delimiters
+            messageStr = messageStr.replace(regex, `$1${hyperlink}$2`);
+          });
+        }
+      }
       
-      // For Putaway, also replace Locations with hyperlinks
-      // Location appears in message string like "IBPUTAWAY^LPN^^^^Location^..."
-      if (section === 'putaway' && locations.length > 0) {
-        locations.forEach(location => {
-          // Escape special regex characters in Location
-          const escapedLocation = location.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          // Match the Location inside the message string (between ^ characters)
-          // Pattern: ^Location^ or ^Location (at end)
-          const regex = new RegExp(`(\\^)${escapedLocation}(\\^|"|$)`, 'g');
-          const inventoryUrl = buildInventoryURL(location);
-          const escapedLocationHtml = String(location).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-          const hyperlink = `<a href="${inventoryUrl}" target="_blank" style="text-decoration: underline;">${escapedLocationHtml}</a>`;
-          // Replace the Location with the hyperlink, preserving the delimiters
+      // For Loading: Extract OLPNs from input and Shipments from message
+      if (section === 'loading') {
+        const olpns = extractOLPNsFromInput(section);
+        const shipments = extractShipmentsFromMessage(messageObj, section);
+        
+        if (olpns.length === 0 && shipments.length === 0) {
+          return messageStr;
+        }
+        
+        // Replace each OLPN in the stringified JSON with a hyperlink
+        // Format: "Olpn_Loaded^^^^{olpn}^{shipment}^^..."
+        olpns.forEach(olpn => {
+          // Escape special regex characters in OLPN
+          const escapedOlpn = olpn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          // Match the OLPN inside the message string (between ^ characters)
+          // Pattern: ^OLPN^ or ^OLPN (at end)
+          const regex = new RegExp(`(\\^)${escapedOlpn}(\\^|"|$)`, 'g');
+          const olpnUrl = buildOLpnURL(olpn);
+          const escapedOlpnHtml = String(olpn).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+          const hyperlink = `<a href="${olpnUrl}" target="_blank" style="text-decoration: underline;">${escapedOlpnHtml}</a>`;
+          // Replace the OLPN with the hyperlink, preserving the delimiters
+          messageStr = messageStr.replace(regex, `$1${hyperlink}$2`);
+        });
+        
+        // Replace each Shipment in the stringified JSON with a hyperlink
+        // Format: "Olpn_Loaded^^^^{olpn}^{shipment}^^..."
+        shipments.forEach(shipment => {
+          // Escape special regex characters in Shipment
+          const escapedShipment = shipment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          // Match the Shipment inside the message string (between ^ characters)
+          // Pattern: ^Shipment^ or ^Shipment (at end)
+          const regex = new RegExp(`(\\^)${escapedShipment}(\\^|"|$)`, 'g');
+          const shipmentUrl = buildShipmentURL(shipment);
+          const escapedShipmentHtml = String(shipment).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+          const hyperlink = `<a href="${shipmentUrl}" target="_blank" style="text-decoration: underline;">${escapedShipmentHtml}</a>`;
+          // Replace the Shipment with the hyperlink, preserving the delimiters
           messageStr = messageStr.replace(regex, `$1${hyperlink}$2`);
         });
       }
@@ -1524,9 +1635,9 @@
           sent_payload: res.sent_payload
         };
         
-        // For Receiving and Putaway, format sent_payload with LPN hyperlinks
+        // For Receiving, Putaway, and Loading, format sent_payload with hyperlinks
         let responseStr;
-        if ((section === 'receiving' || section === 'putaway') && res.sent_payload) {
+        if ((section === 'receiving' || section === 'putaway' || section === 'loading') && res.sent_payload) {
           // Stringify the response without sent_payload first
           const responseWithoutPayload = {
             status_code: res.status_code,
