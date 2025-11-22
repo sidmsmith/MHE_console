@@ -77,7 +77,7 @@
 
     .header-section {
       flex-shrink: 0;
-      min-height: 100px; /* Increased height to fit gear icon and Endpoint Status */
+      min-height: 110px; /* Increased height to fit gear icon and Endpoint Status */
     }
 
     .main-card {
@@ -86,6 +86,7 @@
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       padding: 0.75rem 1rem;
+      min-height: 110px; /* Increased height to fit gear icon and Endpoint Status */
     }
 
     .form-control, textarea {
@@ -127,15 +128,15 @@
     h2 a { transition: opacity 0.2s; }
     h2 a:hover { opacity: 0.8; text-decoration: underline !important; }
     
-    /* Theme selector gear icon - aligned with title */
+    /* Theme selector gear icon - aligned with title center */
     .theme-selector-btn {
       position: absolute;
-      top: 1.5rem;
+      top: calc(0.75rem + 0.25rem); /* Match title wrapper top + center alignment offset */
       right: 1rem;
       background: none;
       border: none;
       color: var(--text);
-      padding: 0.5rem;
+      padding: 0;
       cursor: pointer;
       font-size: 1.5rem;
       z-index: 1000;
@@ -143,7 +144,11 @@
       display: block !important;
       visibility: visible !important;
       opacity: 1 !important;
-      line-height: 1.5rem; /* Match title line-height for alignment */
+      line-height: 1.5rem; /* Match title line-height for vertical alignment */
+      height: 1.5rem; /* Match title height */
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
     }
     
     .theme-selector-btn:hover {
@@ -453,16 +458,18 @@
         <button class="theme-selector-btn" id="themeSelectorBtn" title="Select Theme">
           <i class="fas fa-cog"></i>
         </button>
-        <!-- Title - Centered independently -->
-        <h2 class="text-center mb-2">
-          <a href="#" id="mheJournalLink" class="text-decoration-none" title="Open MHE Journal" target="_blank" style="color: var(--primary); cursor: pointer;">MHE Console v2.1.0</a>
-        </h2>
+        <!-- Title - Centered independently with wrapper for alignment -->
+        <div style="position: relative; display: flex; align-items: center; justify-content: center; min-height: 2rem; margin-bottom: 0.5rem;">
+          <h2 class="text-center mb-0" style="flex: 1;">
+            <a href="#" id="mheJournalLink" class="text-decoration-none" title="Open MHE Journal" target="_blank" style="color: var(--primary); cursor: pointer;">MHE Console v2.1.0</a>
+          </h2>
+        </div>
 
         <!-- Right side: Gear icon and Endpoint Status stacked vertically -->
-        <div style="position: absolute; top: 1.5rem; right: 1rem; display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; z-index: 999;">
-          <!-- Gear icon wrapper to align with title -->
-          <div style="height: 1.5rem; display: flex; align-items: center;">
-            <!-- Gear icon button is positioned absolutely, so we just need a spacer -->
+        <div style="position: absolute; top: 0.75rem; right: 1rem; display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; z-index: 999;">
+          <!-- Gear icon - aligned with title center -->
+          <div style="height: 1.5rem; display: flex; align-items: center; justify-content: center;">
+            <!-- Gear icon button is positioned here -->
           </div>
           <!-- Endpoint Status below gear icon -->
           <div class="endpoint-status" id="endpointStatusContainer">
