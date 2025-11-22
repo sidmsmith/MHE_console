@@ -129,33 +129,32 @@
     /* Theme selector gear icon */
     .theme-selector-btn {
       position: absolute;
-      top: 1rem;
+      top: 1.5rem;
       right: 1rem;
-      background: transparent;
+      background: none;
       border: none;
       color: var(--text);
-      font-size: 1.2rem;
-      cursor: pointer;
       padding: 0.5rem;
-      border-radius: 50%;
-      transition: all 0.2s;
+      cursor: pointer;
+      font-size: 1.5rem;
       z-index: 1000;
+      transition: opacity 0.2s;
       display: block !important;
       visibility: visible !important;
       opacity: 1 !important;
     }
     
     .theme-selector-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      transform: rotate(90deg);
+      opacity: 0.7;
     }
     
+    /* Ensure gear icon is visible in all themes with proper contrast */
     :root.theme-manhattan .theme-selector-btn {
-      color: #bbbbbb;
+      color: #495057;
     }
     
     :root.theme-manhattan .theme-selector-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
+      color: #3B82F6;
     }
 
     /* HIDDEN UNTIL AUTH */
@@ -452,9 +451,19 @@
         <button class="theme-selector-btn" id="themeSelectorBtn" title="Select Theme">
           <i class="fas fa-cog"></i>
         </button>
-        <h2 class="text-center mb-2">
-          <a href="#" id="mheJournalLink" class="text-decoration-none" title="Open MHE Journal" target="_blank" style="color: var(--primary); cursor: pointer;">MHE Console v2.1.0</a>
-        </h2>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h2 class="text-center mb-0" style="flex: 1;">
+            <a href="#" id="mheJournalLink" class="text-decoration-none" title="Open MHE Journal" target="_blank" style="color: var(--primary); cursor: pointer;">MHE Console v2.1.0</a>
+          </h2>
+          <div class="endpoint-status ms-3" id="endpointStatusContainer">
+            <span class="endpoint-status-label">Endpoint Status:</span>
+            <div class="status-indicator" id="statusIndicator">
+              <span class="status-icon online" id="endpointStatusIcon">✓</span>
+              <span class="status-text online" id="endpointStatusText">Online</span>
+            </div>
+            <span class="tooltip" id="statusTooltip"></span>
+          </div>
+        </div>
 
         <!-- ORG -->
         <div id="authSection" class="mb-2">
@@ -463,14 +472,6 @@
             <input type="text" id="org" class="form-control" placeholder="Enter ORG" maxlength="20" style="width: 200px; max-width: 100%;" />
             <button id="authBtn" class="btn btn-success px-3">Authenticate</button>
             <div class="status ms-auto" id="status" style="font-size: 0.9em;">Enter ORG and press Enter to authenticate</div>
-            <div class="endpoint-status ms-3" id="endpointStatusContainer">
-              <span class="endpoint-status-label">Endpoint Status:</span>
-              <div class="status-indicator" id="statusIndicator">
-                <span class="status-icon online" id="endpointStatusIcon">✓</span>
-                <span class="status-text online" id="endpointStatusText">Online</span>
-              </div>
-              <span class="tooltip" id="statusTooltip"></span>
-            </div>
           </div>
         </div>
       </div>
