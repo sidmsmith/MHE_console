@@ -797,7 +797,7 @@
         const regex = new RegExp(`(\\^)${escapedLpn}(\\^|"|$)`, 'g');
         const journalUrl = buildILpnURL(lpn);
         const escapedLpnHtml = String(lpn).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        const hyperlink = `<a href="${journalUrl}" target="_blank" style="color: var(--primary); text-decoration: underline; font-weight: 500;">${escapedLpnHtml}</a>`;
+        const hyperlink = `<a href="${journalUrl}" target="_blank" style="text-decoration: underline;">${escapedLpnHtml}</a>`;
         // Replace the LPN with the hyperlink, preserving the delimiters
         messageStr = messageStr.replace(regex, `$1${hyperlink}$2`);
       });
@@ -813,7 +813,7 @@
           const regex = new RegExp(`(\\^)${escapedLocation}(\\^|"|$)`, 'g');
           const inventoryUrl = buildInventoryURL(location);
           const escapedLocationHtml = String(location).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-          const hyperlink = `<a href="${inventoryUrl}" target="_blank" style="color: var(--primary); text-decoration: underline; font-weight: 500;">${escapedLocationHtml}</a>`;
+          const hyperlink = `<a href="${inventoryUrl}" target="_blank" style="text-decoration: underline;">${escapedLocationHtml}</a>`;
           // Replace the Location with the hyperlink, preserving the delimiters
           messageStr = messageStr.replace(regex, `$1${hyperlink}$2`);
         });
@@ -1450,7 +1450,8 @@
         }
         
         // Print the generated message LAST
-        const messageStr = JSON.stringify(res.message, null, 2);
+        // For Receiving and Putaway, format message with LPN/Location hyperlinks
+        const messageStr = formatMessageWithLpnHyperlinks(res.message, section);
         logToConsole(`[${section.toUpperCase()}] Generated MHE Message:\n${messageStr}`, 'success');
         
         sectionStatus(section, 'Ready to send', 'success');
