@@ -297,6 +297,16 @@
       word-wrap: break-word;
       min-height: 0; /* Allow flex shrinking */
     }
+    
+    /* Override link colors in console - links should inherit text color unless explicitly styled */
+    #consoleOutput a {
+      color: inherit;
+    }
+    
+    /* Message ID links should be blue */
+    #consoleOutput a[style*="color: var(--primary)"] {
+      color: var(--primary) !important;
+    }
 
     .collapse-icon {
       transition: transform 0.2s;
