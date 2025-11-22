@@ -709,6 +709,24 @@
       return `${MHE_JOURNAL_BASE_URL}?${params.toString()}`;
     }
     
+    // Build inventory URL for Location hyperlinks
+    function buildInventoryURL(location) {
+      const org = orgInput.value.trim();
+      if (!org || !location) {
+        return '#';
+      }
+      
+      const locationParam = `${org}-DM1`;
+      const params = new URLSearchParams({
+        'M_Screen': 'inventory',
+        'M_Organization': org,
+        'M_Location': locationParam,
+        'LocationBarcode': String(location)
+      });
+      
+      return `${MHE_JOURNAL_BASE_URL}?${params.toString()}`;
+    }
+    
     // Extract LPNs from input field for Receiving or Putaway
     function extractLPNsFromInput(section) {
       const input = document.getElementById(`${section}-input`).value.trim();
@@ -731,7 +749,26 @@
       return [];
     }
     
-    // Format message JSON string with LPN hyperlinks for Receiving and Putaway
+    // Extract Locations from input field for Putaway
+    function extractLocationsFromInput(section) {
+      if (section !== 'putaway') {
+        return [];
+      }
+      
+      const input = document.getElementById(`${section}-input`).value.trim();
+      if (!input) {
+        return [];
+      }
+      
+      // Putaway: Format is "LPN1,Location1; LPN2,Location2"
+      const pairs = input.split(';').map(pair => pair.trim()).filter(pair => pair.length > 0);
+      return pairs.map(pair => {
+        const parts = pair.split(',').map(p => p.trim());
+        return parts[1]; // Return the Location (second part)
+      }).filter(location => location && location.length > 0);
+    }
+    
+    // Format message JSON string with LPN hyperlinks for Receiving and Putaway, and Location hyperlinks for Putaway
     function formatMessageWithLpnHyperlinks(messageObj, section) {
       if (!messageObj || (section !== 'receiving' && section !== 'putaway')) {
         return JSON.stringify(messageObj, null, 2);
@@ -739,7 +776,10 @@
       
       // Extract LPNs from input
       const lpns = extractLPNsFromInput(section);
-      if (lpns.length === 0) {
+      // Extract Locations from input (only for Putaway)
+      const locations = section === 'putaway' ? extractLocationsFromInput(section) : [];
+      
+      if (lpns.length === 0 && locations.length === 0) {
         return JSON.stringify(messageObj, null, 2);
       }
       
@@ -760,6 +800,23 @@
         // Replace the LPN with the hyperlink, preserving the delimiters
         messageStr = messageStr.replace(regex, `$1${hyperlink}$2`);
       });
+      
+      // For Putaway, also replace Locations with hyperlinks
+      // Location appears in message string like "IBPUTAWAY^LPN^^^^Location^..."
+      if (section === 'putaway' && locations.length > 0) {
+        locations.forEach(location => {
+          // Escape special regex characters in Location
+          const escapedLocation = location.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          // Match the Location inside the message string (between ^ characters)
+          // Pattern: ^Location^ or ^Location (at end)
+          const regex = new RegExp(`(\\^)${escapedLocation}(\\^|"|$)`, 'g');
+          const inventoryUrl = buildInventoryURL(location);
+          const escapedLocationHtml = String(location).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+          const hyperlink = `<a href="${inventoryUrl}" target="_blank" style="color: var(--primary); text-decoration: underline; font-weight: 500;">${escapedLocationHtml}</a>`;
+          // Replace the Location with the hyperlink, preserving the delimiters
+          messageStr = messageStr.replace(regex, `$1${hyperlink}$2`);
+        });
+      }
       
       return messageStr;
     }
