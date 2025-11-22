@@ -108,6 +108,17 @@
     .btn-primary:hover { background: #0b5ed7; }
     .btn-success:hover { background: #218838; }
     .btn-secondary:hover { background: #5a6268; }
+    
+    /* Manhattan theme: all buttons use the same blue color as Send MHE Message buttons */
+    :root.theme-manhattan .btn-primary,
+    :root.theme-manhattan .btn-success {
+      background: #3B82F6;
+    }
+    
+    :root.theme-manhattan .btn-primary:hover,
+    :root.theme-manhattan .btn-success:hover {
+      background: #2563eb;
+    }
 
     .status-bar {
       display: flex;
@@ -156,12 +167,14 @@
     }
     
     /* Ensure gear icon is visible in all themes with proper contrast */
+    /* Manhattan theme: use same color as Dark theme for gear icon */
     :root.theme-manhattan .theme-selector-btn {
-      color: #495057;
+      color: #e0e0e0;
     }
     
+    /* Remove hover color change for Manhattan theme gear icon */
     :root.theme-manhattan .theme-selector-btn:hover {
-      color: #3B82F6;
+      opacity: 0.7;
     }
 
     /* HIDDEN UNTIL AUTH */
@@ -486,7 +499,7 @@
           </div>
           
           <!-- Endpoint Status - Always visible, aligned with ORG textbox -->
-          <div class="endpoint-status" id="endpointStatusContainer" style="position: absolute; right: 1rem; top: 0; display: flex; align-items: center;">
+          <div class="endpoint-status" id="endpointStatusContainer" style="position: absolute; right: 1rem; top: 0.25rem; display: flex; align-items: center;">
             <span class="endpoint-status-label">Endpoint Status:</span>
             <div class="status-indicator" id="statusIndicator">
               <span class="status-icon online" id="endpointStatusIcon">✓</span>
