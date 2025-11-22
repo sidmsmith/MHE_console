@@ -691,6 +691,79 @@
       mheJournalLink.href = buildMHEJournalURL();
     }
     
+    // Build iLpn URL for LPN hyperlinks
+    function buildILpnURL(lpn) {
+      const org = orgInput.value.trim();
+      if (!org || !lpn) {
+        return '#';
+      }
+      
+      const location = `${org}-DM1`;
+      const params = new URLSearchParams({
+        'M_Screen': 'iLpn',
+        'M_Organization': org,
+        'M_Location': location,
+        'IlpnId': String(lpn)
+      });
+      
+      return `${MHE_JOURNAL_BASE_URL}?${params.toString()}`;
+    }
+    
+    // Extract LPNs from input field for Receiving or Putaway
+    function extractLPNsFromInput(section) {
+      const input = document.getElementById(`${section}-input`).value.trim();
+      if (!input) {
+        return [];
+      }
+      
+      if (section === 'receiving') {
+        // Receiving: LPNs separated by spaces, commas, or semicolons
+        return input.split(/[\s,;]+/).filter(lpn => lpn.trim().length > 0).map(lpn => lpn.trim());
+      } else if (section === 'putaway') {
+        // Putaway: Format is "LPN1,Location1; LPN2,Location2"
+        const pairs = input.split(';').map(pair => pair.trim()).filter(pair => pair.length > 0);
+        return pairs.map(pair => {
+          const parts = pair.split(',').map(p => p.trim());
+          return parts[0]; // Return the LPN (first part)
+        }).filter(lpn => lpn.length > 0);
+      }
+      
+      return [];
+    }
+    
+    // Format message JSON string with LPN hyperlinks for Receiving and Putaway
+    function formatMessageWithLpnHyperlinks(messageObj, section) {
+      if (!messageObj || (section !== 'receiving' && section !== 'putaway')) {
+        return JSON.stringify(messageObj, null, 2);
+      }
+      
+      // Extract LPNs from input
+      const lpns = extractLPNsFromInput(section);
+      if (lpns.length === 0) {
+        return JSON.stringify(messageObj, null, 2);
+      }
+      
+      // First, stringify the message
+      let messageStr = JSON.stringify(messageObj, null, 2);
+      
+      // Replace each LPN in the stringified JSON with a hyperlink
+      // The LPN appears inside the message strings like "RECEIVE^LPN^..." or "IBPUTAWAY^LPN^..."
+      lpns.forEach(lpn => {
+        // Escape special regex characters in LPN
+        const escapedLpn = lpn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // Match the LPN inside the message string (between ^ characters or at start/end)
+        // Pattern: ^LPN^ or ^LPN (at end) or LPN^ (at start after command)
+        const regex = new RegExp(`(\\^)${escapedLpn}(\\^|"|$)`, 'g');
+        const journalUrl = buildILpnURL(lpn);
+        const escapedLpnHtml = String(lpn).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        const hyperlink = `<a href="${journalUrl}" target="_blank" style="color: var(--primary); text-decoration: underline; font-weight: 500;">${escapedLpnHtml}</a>`;
+        // Replace the LPN with the hyperlink, preserving the delimiters
+        messageStr = messageStr.replace(regex, `$1${hyperlink}$2`);
+      });
+      
+      return messageStr;
+    }
+    
     function showMHEJournalLink() {
       buildMHEJournalLinkForHeader();
       mheJournalLinkContainer.style.display = 'flex';
@@ -1352,7 +1425,8 @@
       logToConsole(`[${section.toUpperCase()}] Sending message to API...`);
       sectionStatus(section, 'Sending...', 'info');
 
-      const messageStr = JSON.stringify(generatedMessages[section], null, 2);
+      // For Receiving and Putaway, format message with LPN hyperlinks
+      const messageStr = formatMessageWithLpnHyperlinks(generatedMessages[section], section);
       logToConsole(`[${section.toUpperCase()}] Request payload:\n${messageStr}`);
 
       try {
