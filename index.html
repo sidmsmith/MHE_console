@@ -455,6 +455,21 @@
     .endpoint-status.not-clickable {
       cursor: not-allowed;
     }
+
+    /* MHE Journal Link Styling */
+    .mhe-journal-link {
+      transition: opacity 0.2s, color 0.2s;
+    }
+
+    .mhe-journal-link:hover {
+      opacity: 0.8;
+      text-decoration: underline !important;
+      color: var(--blue-select) !important;
+    }
+
+    .mhe-journal-link i {
+      font-size: 0.85em;
+    }
   </style>
 </head>
 <body>
@@ -490,6 +505,14 @@
               <button id="authBtn" class="btn btn-success px-3">Authenticate</button>
               <div class="status ms-auto" id="status" style="font-size: 0.9em;">Enter ORG and press Enter to authenticate</div>
             </div>
+          </div>
+          
+          <!-- MHE Journal Link - Only visible after successful auth -->
+          <div id="mheJournalLinkContainer" style="display: none; margin-top: 0.5rem;">
+            <a href="#" id="mheJournalLink" target="_blank" class="mhe-journal-link" style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--primary); text-decoration: none; font-size: 0.9em; font-weight: 500;">
+              <i class="fas fa-external-link-alt"></i>
+              <span>Open MHE Journal</span>
+            </a>
           </div>
           
           <!-- Endpoint Status - Always visible, aligned with ORG textbox -->
@@ -631,12 +654,13 @@
     const statusEl = document.getElementById('status');
     const consoleOutput = document.getElementById('consoleOutput');
     const mheJournalLink = document.getElementById('mheJournalLink');
+    const mheJournalLinkContainer = document.getElementById('mheJournalLinkContainer');
 
     let token = null;
     let generatedMessages = {}; // Store generated messages per section
 
     // ===== MHE JOURNAL LINK =====
-    // Base URL for MHE Journal - can be configured via environment variable if needed
+    // Base URL for MHE Journal
     const MHE_JOURNAL_BASE_URL = 'https://salep.sce.manh.com/udc/dm/linkTo';
     
     function buildMHEJournalURL() {
@@ -644,8 +668,6 @@
       if (!org) {
         // If no org, disable the link
         mheJournalLink.href = '#';
-        mheJournalLink.style.pointerEvents = 'none';
-        mheJournalLink.style.opacity = '0.6';
         return;
       }
       
@@ -659,16 +681,28 @@
       });
       
       mheJournalLink.href = `${MHE_JOURNAL_BASE_URL}?${params.toString()}`;
-      mheJournalLink.style.pointerEvents = 'auto';
-      mheJournalLink.style.opacity = '1';
     }
     
-    // Update URL when org changes
-    orgInput.addEventListener('input', buildMHEJournalURL);
-    orgInput.addEventListener('change', buildMHEJournalURL);
+    function showMHEJournalLink() {
+      buildMHEJournalURL();
+      mheJournalLinkContainer.style.display = 'block';
+    }
     
-    // Initialize URL on load
-    buildMHEJournalURL();
+    function hideMHEJournalLink() {
+      mheJournalLinkContainer.style.display = 'none';
+    }
+    
+    // Update URL when org changes (only if link is visible)
+    orgInput.addEventListener('input', () => {
+      if (token) {
+        buildMHEJournalURL();
+      }
+    });
+    orgInput.addEventListener('change', () => {
+      if (token) {
+        buildMHEJournalURL();
+      }
+    });
 
     // URL Parameters for cross-app integration
     const urlParams = new URLSearchParams(window.location.search);
@@ -700,6 +734,7 @@
     function hideUIOnAuthFailure() {
       token = null;
       mainUI.style.display = 'none';
+      hideMHEJournalLink(); // Hide MHE Journal link on auth failure
       updateEndpointStatus('Offline'); // Set endpoint status to Offline on auth failure
     }
 
@@ -1069,6 +1104,7 @@
       status('Authenticated – ready!', 'success');
       logToConsole('Authentication successful!', 'success');
       mainUI.style.display = 'flex';
+      showMHEJournalLink(); // Show MHE Journal link after successful auth
       
       // Check endpoint status after authentication
       checkEndpointStatus();
