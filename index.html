@@ -1077,6 +1077,19 @@
         sectionStatus(section, '');
       });
     }
+    
+    // Extract only the "Invalid..." portion from error messages (remove "Errors: XXX" part)
+    function extractInvalidPortion(errorMessage) {
+      if (!errorMessage) {
+        return errorMessage;
+      }
+      // Remove ". Errors: XXX" portion if it exists
+      const errorsIndex = errorMessage.indexOf('. Errors:');
+      if (errorsIndex !== -1) {
+        return errorMessage.substring(0, errorsIndex);
+      }
+      return errorMessage;
+    }
 
     // ENDPOINT STATUS INDICATOR
     // Function to update endpoint status
@@ -1429,7 +1442,14 @@
         const res = await api(`generate_${section}`, requestData);
         
         if (!res.success) {
-          sectionStatus(section, res.error || 'Generation failed', 'error');
+          // For Receiving, Putaway, and Loading: show only "Invalid..." portion in section status
+          // Full error message with "Errors: XXX" will still be in console
+          const errorMsg = res.error || 'Generation failed';
+          if (section === 'receiving' || section === 'putaway' || section === 'loading') {
+            sectionStatus(section, extractInvalidPortion(errorMsg), 'error');
+          } else {
+            sectionStatus(section, errorMsg, 'error');
+          }
           
           // Enhanced error display for sections with validation (Receiving, Putaway, Loading)
           if (section === 'receiving' && res.invalid) {
