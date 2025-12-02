@@ -190,6 +190,7 @@ def validate_lpns(org, token, lpns, required_status='1000', log_callback=None):
     invalid_lpns = []
     errors = []
     response_data = None
+    lpn_data_map = {}  # Initialize here so it's available in error returns
     
     try:
         r = requests.post(url, json=payload, headers=headers, timeout=60, verify=False)
