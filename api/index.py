@@ -158,11 +158,12 @@ def validate_lpns(org, token, lpns, required_status='1000', log_callback=None):
         'invalid': [list of invalid LPNs],
         'errors': [list of error messages],
         'request_payload': payload sent,
-        'response': response received
+        'response': response received,
+        'lpn_data': {lpn: {TotalQuantity: value, ...}}  # Map of LPN to its data from API
     }
     """
     if not lpns:
-        return {'valid': [], 'invalid': [], 'errors': [], 'request_payload': None, 'response': None}
+        return {'valid': [], 'invalid': [], 'errors': [], 'request_payload': None, 'response': None, 'lpn_data': {}}
     
     url = f"https://{API_HOST}{ILPN_SEARCH_PATH}"
     headers = {
@@ -211,12 +212,14 @@ def validate_lpns(org, token, lpns, required_status='1000', log_callback=None):
                 'invalid': invalid_lpns, 
                 'errors': errors,
                 'request_payload': payload,
-                'response': response_data
+                'response': response_data,
+                'lpn_data': lpn_data_map
             }
         
-        # Extract found LPNs from response
+        # Extract found LPNs from response and store their data (including TotalQuantity)
         # Since we filter by Status in the query, any returned LPNs already have the correct status
         found_lpns = set()
+        lpn_data_map = {}  # Map LPN to its full data from API
         if isinstance(response_data, dict):
             # Check both 'Data' and 'data' (API may use either)
             data_list = response_data.get('data') or response_data.get('Data', [])
@@ -226,7 +229,10 @@ def validate_lpns(org, token, lpns, required_status='1000', log_callback=None):
                         # Extract IlpnId (case-insensitive check)
                         lpn_id = item.get('IlpnId') or item.get('IlpnID') or item.get('ilpnId') or item.get('LpnId') or item.get('LPN') or item.get('Id')
                         if lpn_id:
-                            found_lpns.add(str(lpn_id))
+                            lpn_id_str = str(lpn_id)
+                            found_lpns.add(lpn_id_str)
+                            # Store the full item data for this LPN (includes TotalQuantity)
+                            lpn_data_map[lpn_id_str] = item
         
         # Categorize LPNs - any LPN returned from the query is valid (already filtered by Status)
         for lpn in lpns:
@@ -245,13 +251,16 @@ def validate_lpns(org, token, lpns, required_status='1000', log_callback=None):
         invalid_lpns = lpns
         errors.append(f"Validation error: {str(e)}")
         response_data = {"error": str(e)}
+        lpn_data_map = {}
     
     return {
         'valid': valid_lpns, 
         'invalid': invalid_lpns, 
         'errors': errors,
         'request_payload': payload,
-        'response': response_data
+        'response': response_data,
+        'lpn_data': lpn_data_map
+        'lpn_data': lpn_data_map
     }
 
 def validate_locations(org, token, locations, log_callback=None):
@@ -479,25 +488,44 @@ def generate_receiving_message(lpns):
         "Message": message_strings
     }
 
-def generate_putaway_message(lpn_location_pairs, user=None, org=None):
+def generate_putaway_message(lpn_location_pairs, user=None, org=None, lpn_data_map=None):
     """
     Generate IBPUTAWAY message format for multiple LPN,Location pairs (complex pipe-delimited)
-    From Postman: "IBPUTAWAY^LPN00268^^^^R1R10305^^demoweb@ss-demo^ZGVtb3dlYkBzZHQtZGVtbw==_c2R0LWRlbW8=_c2R0LWRlbW8tZG0x^2024-02-05T14:15:45^2024-02-05T14:12:45^2024-02-05T14:15:45^20^^"
-    Simplified version - can be enhanced with more fields
+    New format: "IBPUTAWAY^LPN^^^TotalQuantity^Location^Divert^^base64data^^^^^"
     Args:
         lpn_location_pairs: List of dicts with 'lpn' and 'location' keys
+        lpn_data_map: Optional dict mapping LPN to its API data (for TotalQuantity)
     """
     if not lpn_location_pairs:
         return None
-    from datetime import datetime
-    now = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    import base64
+    
+    # Build base64 encoded data: user_base64_org_org-DM1
+    # Format: base64(user)_org_org-DM1
+    org_upper = (org or '').upper()
+    user_str = user or f'sdtadmin@{org_upper.lower()}' if org else 'sdtadmin@'
+    user_b64 = base64.b64encode(user_str.encode()).decode()
+    base64_data = f"{user_b64}_{org_upper}_{org_upper}-DM1"
+    
     # Generate one message string per LPN,Location pair
-    # Format: IBPUTAWAY^LPN^[empty]^[empty]^[empty]^Location^[empty]^User^[base64 encoded data]^timestamp^timestamp^timestamp^[empty]^[empty]^
+    # Format: IBPUTAWAY^LPN^^^TotalQuantity^Location^Divert^^base64data^^^^^
     message_strings = []
     for pair in lpn_location_pairs:
         lpn = pair.get('lpn', '')
         location = pair.get('location', '')
-        message_str = f"IBPUTAWAY^{lpn}^^^^{location}^^{user or 'sdtadmin@' + (org or '').lower()}^^{now}^{now}^{now}^20^^"
+        
+        # Get TotalQuantity from lpn_data_map if available
+        total_quantity = '0'
+        if lpn_data_map and lpn in lpn_data_map:
+            lpn_data = lpn_data_map[lpn]
+            # Try different case variations for TotalQuantity
+            total_quantity = str(lpn_data.get('TotalQuantity') or 
+                                lpn_data.get('totalQuantity') or 
+                                lpn_data.get('Totalquantity') or 
+                                lpn_data.get('TOTALQUANTITY') or '0')
+        
+        # New format: IBPUTAWAY^LPN^^^TotalQuantity^Location^Divert^^base64data^^^^^
+        message_str = f"IBPUTAWAY^{lpn}^^^{total_quantity}^{location}^Divert^^{base64_data}^^^^^"
         message_strings.append(message_str)
     return {
         "EndpointId": MHE_ENDPOINT_ID,
@@ -769,7 +797,10 @@ def generate_putaway():
                 "location_validation_response": location_validation_result.get('response')
             })
     
-    message = generate_putaway_message(pairs, org=org)
+    # Get lpn_data_map from validation result to extract TotalQuantity
+    lpn_data_map = lpn_validation_result.get('lpn_data', {}) if lpn_validation_result else {}
+    
+    message = generate_putaway_message(pairs, org=org, lpn_data_map=lpn_data_map)
     if not message:
         return jsonify({"success": False, "error": "Failed to generate message"})
     
