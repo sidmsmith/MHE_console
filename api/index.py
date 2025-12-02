@@ -261,7 +261,6 @@ def validate_lpns(org, token, lpns, required_status='1000', log_callback=None):
         'request_payload': payload,
         'response': response_data,
         'lpn_data': lpn_data_map
-        'lpn_data': lpn_data_map
     }
 
 def validate_locations(org, token, locations, log_callback=None):
