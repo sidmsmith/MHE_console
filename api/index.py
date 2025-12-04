@@ -76,6 +76,14 @@ def serve_statsig_sdk():
         return send_from_directory(os.path.dirname(os.path.dirname(__file__)), 'statsig-js-client.min.js', mimetype='application/javascript')
     return jsonify({'error': 'SDK file not found'}), 404
 
+@app.route('/statsig.js', methods=['GET'])
+def serve_statsig_js():
+    """Serve Statsig initialization script"""
+    statsig_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'statsig.js')
+    if os.path.exists(statsig_path):
+        return send_from_directory(os.path.dirname(os.path.dirname(__file__)), 'statsig.js', mimetype='application/javascript')
+    return jsonify({'error': 'Statsig script not found'}), 404
+
 @app.route('/api/app_opened', methods=['POST'])
 def app_opened():
     send_ha_message({"event": "mhe_console_open"})

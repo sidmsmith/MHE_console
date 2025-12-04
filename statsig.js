@@ -92,8 +92,14 @@ function logEvent(eventName, eventValue = {}, user = null) {
     // value can be string or number, metadata is Record<string, string>
     // User is set during initialization, so we don't pass it here
     
+    // Get app info and add to metadata
+    const appInfo = getAppInfo();
+    
     // Convert eventValue object to metadata (string values only for metadata)
-    const metadata = {};
+    const metadata = {
+      app_name: appInfo.appName,
+      app_version: appInfo.appVersion
+    };
     if (eventValue && typeof eventValue === 'object') {
       for (const [key, value] of Object.entries(eventValue)) {
         metadata[key] = String(value);
@@ -102,7 +108,7 @@ function logEvent(eventName, eventValue = {}, user = null) {
     
     // New SDK: logEvent(eventName, value?, metadata?)
     statsigClient.logEvent(eventName, null, metadata);
-    console.log(`[Statsig] Event logged: ${eventName}`, eventValue);
+    console.log(`[Statsig] Event logged: ${eventName}`, metadata);
   } catch (error) {
     console.error(`[Statsig] Error logging event "${eventName}":`, error);
   }
@@ -157,6 +163,18 @@ function getUserId() {
 function getCurrentOrg() {
   const orgInput = document.getElementById('org');
   return orgInput ? orgInput.value.trim() : 'unknown';
+}
+
+// Helper: Get app name and version from page title
+function getAppInfo() {
+  const title = document.title || '';
+  // Extract version from title like "MHE Console v2.2.2"
+  const versionMatch = title.match(/v(\d+\.\d+\.\d+)/i);
+  const version = versionMatch ? versionMatch[1] : 'unknown';
+  // Extract app name (everything before "v" or just use title)
+  const appNameMatch = title.match(/^(.+?)\s+v\d+/i);
+  const appName = appNameMatch ? appNameMatch[1].trim() : (title.split(' v')[0] || 'MHE Console');
+  return { appName, appVersion: version };
 }
 
 // Initialize when DOM is ready
