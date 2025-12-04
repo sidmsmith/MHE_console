@@ -1360,6 +1360,15 @@
         hideUIOnAuthFailure();
         return;
       }
+      
+      // Track auth attempt in Statsig
+      if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+        window.StatsigTracking.logEvent('auth_attempt', {
+          org: org,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
       status('Authenticating...');
       logToConsole(`Authenticating with ORG: ${org}...`);
       const res = await api('auth', { org });
@@ -1367,6 +1376,15 @@
         status(res.error || 'Auth failed', 'error');
         logToConsole(`Authentication failed: ${res.error || 'Unknown error'}`, 'error');
         hideUIOnAuthFailure();
+        
+        // Track auth failure in Statsig
+        if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+          window.StatsigTracking.logEvent('auth_failed', {
+            org: org,
+            error: res.error || 'Auth failed',
+            timestamp: new Date().toISOString()
+          });
+        }
         return;
       }
       token = res.token;
@@ -1374,6 +1392,14 @@
       logToConsole('Authentication successful!', 'success');
       mainUI.style.display = 'flex';
       showMHEJournalLink(); // Show MHE Journal link after successful auth
+      
+      // Track auth success in Statsig
+      if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+        window.StatsigTracking.logEvent('auth_success', {
+          org: org,
+          timestamp: new Date().toISOString()
+        });
+      }
       
       // Check endpoint status after authentication
       checkEndpointStatus();
@@ -1419,6 +1445,17 @@
       }
 
       const org = orgInput.value.trim();
+      
+      // Track generate message attempt in Statsig
+      if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+        window.StatsigTracking.logEvent('generate_message_attempt', {
+          section: section,
+          org: org || 'unknown',
+          input_length: String(input.length),
+          timestamp: new Date().toISOString()
+        });
+      }
+      
       logToConsole(`[${section.toUpperCase()}] Generating message for input: ${input}...`);
       sectionStatus(section, `Generating...`, 'info');
 
@@ -1519,6 +1556,16 @@
           }
           logToConsole(`[${section.toUpperCase()}] Generation failed: ${res.error}`, 'error');
           
+          // Track generation failure in Statsig
+          if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+            window.StatsigTracking.logEvent('generate_message_failed', {
+              section: section,
+              org: org || 'unknown',
+              error: res.error || 'Generation failed',
+              timestamp: new Date().toISOString()
+            });
+          }
+          
           // Check if auth failed
           if (res.error && (res.error.includes('Auth') || res.error.includes('token') || res.error.includes('401'))) {
             hideUIOnAuthFailure();
@@ -1528,6 +1575,15 @@
 
         // Store message first
         generatedMessages[section] = res.message;
+        
+        // Track generation success in Statsig
+        if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+          window.StatsigTracking.logEvent('generate_message_completed', {
+            section: section,
+            org: org || 'unknown',
+            timestamp: new Date().toISOString()
+          });
+        }
         
         // Show validation details FIRST (for Receiving, Putaway, and Loading sections)
         if (section === 'receiving' || section === 'putaway' || section === 'loading') {
@@ -1617,6 +1673,16 @@
       }
 
       const org = orgInput.value.trim();
+      
+      // Track send message attempt in Statsig
+      if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+        window.StatsigTracking.logEvent('send_message_attempt', {
+          section: section,
+          org: org || 'unknown',
+          timestamp: new Date().toISOString()
+        });
+      }
+      
       logToConsole(`[${section.toUpperCase()}] Sending message to API...`);
       sectionStatus(section, 'Sending...', 'info');
 
@@ -1634,6 +1700,17 @@
           sectionStatus(section, res.error || 'Send failed', 'error');
           const errorStr = JSON.stringify(res, null, 2);
           logToConsole(`[${section.toUpperCase()}] Send failed:\n${errorStr}`, 'error');
+          
+          // Track send failure in Statsig
+          if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+            window.StatsigTracking.logEvent('send_message_failed', {
+              section: section,
+              org: org || 'unknown',
+              error: res.error || 'Send failed',
+              status_code: String(res.status_code || 'N/A'),
+              timestamp: new Date().toISOString()
+            });
+          }
           
           // Check if auth failed
           if (res.error && (res.error.includes('Auth') || res.error.includes('token') || res.error.includes('401'))) {
@@ -1670,6 +1747,16 @@
         }
         
         logToConsole(`[${section.toUpperCase()}] API Response (Status: ${res.status_code || 'N/A'}):\n${responseStr}`, res.success ? 'success' : 'error');
+        
+        // Track send success in Statsig
+        if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+          window.StatsigTracking.logEvent('send_message_completed', {
+            section: section,
+            org: org || 'unknown',
+            status_code: String(res.status_code || 'N/A'),
+            timestamp: new Date().toISOString()
+          });
+        }
         
         // Extract MessageId from response and add clickable link (works for all sections: Receiving, Putaway, Loading, etc.)
         if (res.success && res.response) {
@@ -1739,6 +1826,8 @@
       }
     }, 30000);
   </script>
+  <!-- Statsig SDK will be loaded by statsig.js -->
+  <script src="statsig.js"></script>
   <script>
     // Vercel Analytics - load the insights script
     // This script is automatically provided by Vercel when Analytics is enabled
