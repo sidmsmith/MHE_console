@@ -4,6 +4,7 @@ import json
 import os
 import requests
 from requests.auth import HTTPBasicAuth
+from datetime import datetime
 import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -11,7 +12,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 app = Flask(__name__)
 
 # === SECURE CONFIG (from Vercel Environment Variables) ===
-HA_WEBHOOK_URL = os.getenv("HA_WEBHOOK_URL", "http://sidmsmith.zapto.org:8123/api/webhook/mhe_console")
+HA_WEBHOOK_URL = os.getenv("HA_WEBHOOK_URL", "http://sidmsmith.zapto.org:8123/api/webhook/manhattan_app_usage")
 HA_HEADERS = {"Content-Type": "application/json"}
 
 AUTH_HOST = "salep-auth.sce.manh.com"
@@ -51,43 +52,34 @@ def get_manhattan_token(org):
     return None
 
 # === API ROUTES ===
-@app.route('/api/statsig-config', methods=['GET'])
-def statsig_config():
-    """Provide Statsig Client SDK Key to the client"""
-    client_key = os.getenv('STATSIG_CLIENT_KEY') or os.getenv('STATSIG_CLIENT_SDK_KEY')
-    
-    if not client_key:
-        return jsonify({
-            'key': None,
-            'error': 'STATSIG_CLIENT_KEY environment variable not set. Please add it in Vercel project settings.',
-            'note': 'You need a Client SDK Key (starts with "client-"), not a Server Secret (starts with "secret-")'
-        })
-    
-    return jsonify({
-        'key': client_key,
-        'note': 'Client SDK Key retrieved successfully'
-    })
-
-@app.route('/statsig-js-client.min.js', methods=['GET'])
-def serve_statsig_sdk():
-    """Serve Statsig SDK file"""
-    sdk_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'statsig-js-client.min.js')
-    if os.path.exists(sdk_path):
-        return send_from_directory(os.path.dirname(os.path.dirname(__file__)), 'statsig-js-client.min.js', mimetype='application/javascript')
-    return jsonify({'error': 'SDK file not found'}), 404
-
-@app.route('/statsig.js', methods=['GET'])
-def serve_statsig_js():
-    """Serve Statsig initialization script"""
-    statsig_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'statsig.js')
-    if os.path.exists(statsig_path):
-        return send_from_directory(os.path.dirname(os.path.dirname(__file__)), 'statsig.js', mimetype='application/javascript')
-    return jsonify({'error': 'Statsig script not found'}), 404
-
 @app.route('/api/app_opened', methods=['POST'])
 def app_opened():
-    send_ha_message({"event": "mhe_console_open"})
+    # Track app opened event (metadata will be added by frontend)
     return jsonify({"success": True})
+
+@app.route('/api/ha-track', methods=['POST'])
+def ha_track():
+    """Track events to Home Assistant webhook"""
+    try:
+        data = request.json
+        event_name = data.get('event_name')
+        metadata = data.get('metadata', {})
+        
+        # Build complete payload with app info and timestamp
+        payload = {
+            "event_name": event_name,
+            "app_name": "mhe-console",
+            "app_version": "2.2.2",
+            **metadata,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        send_ha_message(payload)
+        return jsonify({"success": True})
+    except Exception as e:
+        # Silently fail - don't interrupt user experience
+        print(f"[HA] Failed to track event: {e}")
+        return jsonify({"success": True})  # Return success anyway
 
 @app.route('/api/auth', methods=['POST'])
 def auth():
@@ -96,9 +88,7 @@ def auth():
         return jsonify({"success": False, "error": "ORG required"})
     token = get_manhattan_token(org)
     if token:
-        send_ha_message({"event": "mhe_console_auth", "org": org, "success": True})
         return jsonify({"success": True, "token": token})
-    send_ha_message({"event": "mhe_console_auth", "org": org, "success": False})
     return jsonify({"success": False, "error": "Auth failed"})
 
 # === MHE MESSAGE GENERATION AND SENDING ===

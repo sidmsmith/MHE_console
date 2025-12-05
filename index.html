@@ -1148,26 +1148,71 @@
       
       // Show loading state
       const originalStatus = currentStatus;
+      const toggleStartTime = Date.now();
+      
+      // Track endpoint action
+      trackEvent('endpoint_action', {
+        endpoint_action: action,
+        endpoint_status_before: originalStatus,
+        org: org || 'unknown'
+      });
+      
       updateEndpointStatus('Checking...');
       
       try {
         const res = await api(`endpoint_${action}`, { org, token });
+        const toggleDuration = Date.now() - toggleStartTime;
         console.log(`[ENDPOINT_TOGGLE] ${actionText} response:`, res);
         
         if (res.success) {
           logToConsole(`Endpoint ${action}ed successfully`, 'success');
+          
+          // Track endpoint action success
+          trackEvent('endpoint_action_completed', {
+            endpoint_action: action,
+            endpoint_status_before: originalStatus,
+            endpoint_status_after: res.status || 'Unknown',
+            org: org || 'unknown',
+            action_duration_ms: toggleDuration,
+            api_success: true
+          });
+          
           // Wait a moment then check status again
           setTimeout(() => {
             checkEndpointStatus();
           }, 1000);
         } else {
           logToConsole(`Failed to ${action} endpoint: ${res.error || 'Unknown error'}`, 'error');
+          
+          // Track endpoint action failure
+          trackEvent('endpoint_action_failed', {
+            endpoint_action: action,
+            endpoint_status_before: originalStatus,
+            org: org || 'unknown',
+            error: res.error || 'Unknown error',
+            error_message: res.error || 'Unknown error',
+            action_duration_ms: toggleDuration,
+            api_success: false
+          });
+          
           // Restore original status on failure
           updateEndpointStatus(originalStatus);
         }
       } catch (e) {
         console.error(`[ENDPOINT_TOGGLE] Exception:`, e);
         logToConsole(`Error ${actionText.toLowerCase()} endpoint: ${e.message}`, 'error');
+        
+        // Track endpoint action error
+        trackEvent('endpoint_action_failed', {
+          endpoint_action: action,
+          endpoint_status_before: originalStatus,
+          org: org || 'unknown',
+          error: e.message || 'Unknown error',
+          error_message: e.message || 'Unknown error',
+          action_duration_ms: Date.now() - toggleStartTime,
+          api_success: false
+        });
+        
         // Restore original status on error
         updateEndpointStatus(originalStatus);
       }
@@ -1188,9 +1233,12 @@
         return;
       }
       
+      const statusCheckStartTime = Date.now();
+      
       try {
         console.log('[ENDPOINT_STATUS] Calling API...');
         const res = await api('endpoint_status', { org, token });
+        const statusCheckDuration = Date.now() - statusCheckStartTime;
         console.log('[ENDPOINT_STATUS] API Response:', res);
         
         if (res.success && res.status) {
@@ -1198,15 +1246,52 @@
           const status = res.status === 'Started' ? 'Started' : res.status === 'Stopped' ? 'Stopped' : 'Offline';
           console.log(`[ENDPOINT_STATUS] Success: status=${status}`);
           updateEndpointStatus(status);
+          
+          // Track endpoint status check (only on initial check after auth, not periodic checks)
+          // This will be called from authenticate() after successful auth
+          if (window._trackEndpointStatusAfterAuth) {
+            trackEvent('endpoint_status_checked', {
+              endpoint_status: status,
+              org: org || 'unknown',
+              status_check_duration_ms: statusCheckDuration,
+              api_success: true
+            });
+            window._trackEndpointStatusAfterAuth = false;
+          }
         } else {
           // API call failed or no status - connection issue
           console.log(`[ENDPOINT_STATUS] API call failed or no status:`, res.error);
           updateEndpointStatus('Offline');
+          
+          // Track endpoint status check failure
+          if (window._trackEndpointStatusAfterAuth) {
+            trackEvent('endpoint_status_checked', {
+              endpoint_status: 'Offline',
+              org: org || 'unknown',
+              error: res.error || 'Status check failed',
+              status_check_duration_ms: statusCheckDuration,
+              api_success: false
+            });
+            window._trackEndpointStatusAfterAuth = false;
+          }
         }
       } catch (e) {
         // Exception means connection failure
         console.error('[ENDPOINT_STATUS] Exception:', e);
         updateEndpointStatus('Offline');
+        
+        // Track endpoint status check error
+        if (window._trackEndpointStatusAfterAuth) {
+          trackEvent('endpoint_status_checked', {
+            endpoint_status: 'Offline',
+            org: org || 'unknown',
+            error: e.message || 'Connection failure',
+            error_message: e.message || 'Connection failure',
+            status_check_duration_ms: Date.now() - statusCheckStartTime,
+            api_success: false
+          });
+          window._trackEndpointStatusAfterAuth = false;
+        }
       }
     }
     
@@ -1243,6 +1328,197 @@
         headers,
         body: JSON.stringify(data)
       }).then(r => r.json());
+    }
+
+    // ===== SESSION TRACKING =====
+    const SESSION_STORAGE_KEY = 'mhe_console_session';
+    let sessionId = null;
+    let pageLoadTime = null;
+    let authAttemptCount = 0;
+    let firstAuthSuccess = true;
+
+    // Initialize session on page load
+    (function initSession() {
+      pageLoadTime = Date.now();
+      
+      // Get or create session ID
+      sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (!sessionId) {
+        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
+        sessionStorage.setItem(SESSION_STORAGE_KEY, sessionId);
+      }
+      
+      // Check if returning user
+      const hasSavedPreferences = localStorage.getItem('mhe_console_theme') !== null;
+      
+      // Store for metadata collection
+      window._appSession = {
+        sessionId,
+        pageLoadTime,
+        hasSavedPreferences
+      };
+    })();
+
+    // ===== GENERIC METADATA COLLECTION (Reusable across all apps) =====
+    function getCommonMetadata(additionalMetadata = {}) {
+      const now = Date.now();
+      const timeOnPage = pageLoadTime ? Math.floor((now - pageLoadTime) / 1000) : 0;
+      
+      // Parse user agent
+      const ua = navigator.userAgent;
+      const browserInfo = parseUserAgent(ua);
+      
+      // Get screen info
+      const screenWidth = window.screen.width;
+      const screenHeight = window.screen.height;
+      const screenResolution = `${screenWidth}x${screenHeight}`;
+      
+      // Get URL parameters
+      const urlParamsObj = {};
+      const currentUrlParams = new URLSearchParams(window.location.search);
+      for (const [key, value] of currentUrlParams.entries()) {
+        urlParamsObj[key] = value;
+      }
+      
+      // Get theme
+      const currentTheme = localStorage.getItem('mhe_console_theme') || 'dark';
+      
+      // Build common metadata
+      const commonMetadata = {
+        // Category 1: User/Browser Information
+        user_agent: ua,
+        browser_name: browserInfo.name,
+        browser_version: browserInfo.version,
+        device_type: getDeviceType(),
+        os_name: browserInfo.os,
+        os_version: browserInfo.osVersion,
+        screen_resolution: screenResolution,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        language: navigator.language || navigator.userLanguage,
+        
+        // Category 2: Session & Context
+        session_id: sessionId,
+        page_load_time: pageLoadTime ? new Date(pageLoadTime).toISOString() : null,
+        time_on_page: timeOnPage,
+        referrer: document.referrer || null,
+        url_params: Object.keys(urlParamsObj).length > 0 ? urlParamsObj : null,
+        auto_authenticated: urlOrg !== null,
+        
+        // Category 3: App State & Preferences
+        theme: currentTheme,
+        has_saved_preferences: window._appSession?.hasSavedPreferences || false,
+        
+        // Category 4: Authentication Context (will be overridden by event-specific data)
+        auth_method: urlOrg ? 'url_param' : 'manual',
+        auth_attempt_count: authAttemptCount,
+        first_auth_success: firstAuthSuccess,
+        
+        // Category 7: Error & Debugging (will be populated if error occurs)
+        // error_code, error_message, stack_trace, api_error_details - added per event
+        
+        // Category 8: Cross-App Integration
+        source_app: urlParamsObj.Organization ? 'cross_app' : null,
+        integration_type: urlOrg ? 'url_params' : 'direct',
+        
+        // Category 10: Geographic/Network
+        request_origin: window.location.origin,
+        
+        // Merge any additional metadata
+        ...additionalMetadata
+      };
+      
+      return commonMetadata;
+    }
+
+    // Helper: Parse user agent
+    function parseUserAgent(ua) {
+      let name = 'Unknown';
+      let version = 'Unknown';
+      let os = 'Unknown';
+      let osVersion = 'Unknown';
+      
+      // Browser detection
+      if (ua.includes('Chrome') && !ua.includes('Edg')) {
+        name = 'Chrome';
+        const match = ua.match(/Chrome\/([\d.]+)/);
+        version = match ? match[1] : 'Unknown';
+      } else if (ua.includes('Firefox')) {
+        name = 'Firefox';
+        const match = ua.match(/Firefox\/([\d.]+)/);
+        version = match ? match[1] : 'Unknown';
+      } else if (ua.includes('Safari') && !ua.includes('Chrome')) {
+        name = 'Safari';
+        const match = ua.match(/Version\/([\d.]+)/);
+        version = match ? match[1] : 'Unknown';
+      } else if (ua.includes('Edg')) {
+        name = 'Edge';
+        const match = ua.match(/Edg\/([\d.]+)/);
+        version = match ? match[1] : 'Unknown';
+      }
+      
+      // OS detection
+      if (ua.includes('Windows')) {
+        os = 'Windows';
+        const match = ua.match(/Windows NT ([\d.]+)/);
+        if (match) {
+          const ntVersion = match[1];
+          const versionMap = {
+            '10.0': '10/11',
+            '6.3': '8.1',
+            '6.2': '8',
+            '6.1': '7'
+          };
+          osVersion = versionMap[ntVersion] || ntVersion;
+        }
+      } else if (ua.includes('Mac OS X') || ua.includes('Macintosh')) {
+        os = 'macOS';
+        const match = ua.match(/Mac OS X ([\d_]+)/);
+        if (match) {
+          osVersion = match[1].replace(/_/g, '.');
+        }
+      } else if (ua.includes('Linux')) {
+        os = 'Linux';
+      } else if (ua.includes('Android')) {
+        os = 'Android';
+        const match = ua.match(/Android ([\d.]+)/);
+        osVersion = match ? match[1] : 'Unknown';
+      } else if (ua.includes('iPhone') || ua.includes('iPad')) {
+        os = 'iOS';
+        const match = ua.match(/OS ([\d_]+)/);
+        if (match) {
+          osVersion = match[1].replace(/_/g, '.');
+        }
+      }
+      
+      return { name, version, os, osVersion };
+    }
+
+    // Helper: Get device type
+    function getDeviceType() {
+      const ua = navigator.userAgent;
+      if (/tablet|ipad|playbook|silk/i.test(ua)) {
+        return 'tablet';
+      }
+      if (/mobile|iphone|ipod|android|blackberry|opera|mini|windows\sce|palm|smartphone|iemobile/i.test(ua)) {
+        return 'mobile';
+      }
+      return 'desktop';
+    }
+
+    // Home Assistant tracking helper with enhanced metadata
+    async function trackEvent(eventName, metadata = {}) {
+      try {
+        // Get common metadata and merge with event-specific metadata
+        const fullMetadata = getCommonMetadata(metadata);
+        
+        await api('ha-track', {
+          event_name: eventName,
+          metadata: fullMetadata
+        });
+      } catch (error) {
+        // Silently fail - don't interrupt user experience
+        console.warn('[HA] Failed to track event:', error);
+      }
     }
 
     // ===== THEME SYSTEM =====
@@ -1342,6 +1618,9 @@
 
     // App opened
     window.addEventListener('load', () => {
+      // Track app opened with full metadata
+      trackEvent('app_opened', {});
+      
       api('app_opened', {});
       
       // Auto-authenticate if Organization parameter is provided in URL
@@ -1361,30 +1640,36 @@
         return;
       }
       
-      // Track auth attempt in Statsig
-      if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
-        window.StatsigTracking.logEvent('auth_attempt', {
-          org: org,
-          timestamp: new Date().toISOString()
-        });
-      }
+      // Increment auth attempt count
+      authAttemptCount++;
+      const authStartTime = Date.now();
+      
+      // Track auth attempt
+      trackEvent('auth_attempt', {
+        org: org || 'unknown',
+        auth_attempt_count: authAttemptCount
+      });
       
       status('Authenticating...');
       logToConsole(`Authenticating with ORG: ${org}...`);
       const res = await api('auth', { org });
+      const authDuration = Date.now() - authStartTime;
+      
       if (!res.success) {
         status(res.error || 'Auth failed', 'error');
         logToConsole(`Authentication failed: ${res.error || 'Unknown error'}`, 'error');
         hideUIOnAuthFailure();
         
-        // Track auth failure in Statsig
-        if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
-          window.StatsigTracking.logEvent('auth_failed', {
-            org: org,
-            error: res.error || 'Auth failed',
-            timestamp: new Date().toISOString()
-          });
-        }
+        // Track auth failure
+        trackEvent('auth_failed', {
+          org: org || 'unknown',
+          error: res.error || 'Auth failed',
+          error_message: res.error || 'Auth failed',
+          auth_attempt_count: authAttemptCount,
+          auth_duration_ms: authDuration,
+          token_received: false
+        });
+        firstAuthSuccess = false;
         return;
       }
       token = res.token;
@@ -1393,15 +1678,20 @@
       mainUI.style.display = 'flex';
       showMHEJournalLink(); // Show MHE Journal link after successful auth
       
-      // Track auth success in Statsig
-      if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
-        window.StatsigTracking.logEvent('auth_success', {
-          org: org,
-          timestamp: new Date().toISOString()
-        });
-      }
+      // Track auth success
+      trackEvent('auth_success', {
+        org: org,
+        auth_attempt_count: authAttemptCount,
+        auth_duration_ms: authDuration,
+        token_received: true,
+        first_auth_success: firstAuthSuccess
+      });
+      
+      // Reset for next session (if they log out and back in)
+      firstAuthSuccess = false;
       
       // Check endpoint status after authentication
+      window._trackEndpointStatusAfterAuth = true; // Flag to track initial status check
       checkEndpointStatus();
     }
 
@@ -1446,15 +1736,21 @@
 
       const org = orgInput.value.trim();
       
-      // Track generate message attempt in Statsig
-      if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
-        window.StatsigTracking.logEvent('generate_message_attempt', {
-          section: section,
-          org: org || 'unknown',
-          input_length: String(input.length),
-          timestamp: new Date().toISOString()
-        });
-      }
+      // Extract section-specific data for metadata
+      const lpns = extractLPNsFromInput(section);
+      const olpns = section === 'loading' ? extractOLPNsFromInput(section) : [];
+      const locations = section === 'putaway' ? extractLocationsFromInput(section) : [];
+      const generationStartTime = Date.now();
+      
+      // Track generate message attempt with MHE-specific metadata
+      trackEvent('generate_message_attempt', {
+        section: section,
+        org: org || 'unknown',
+        input_length: String(input.length),
+        lpn_list: lpns.length > 0 ? lpns : null,
+        olpn_list: olpns.length > 0 ? olpns : null,
+        location_list: locations.length > 0 ? locations : null
+      });
       
       logToConsole(`[${section.toUpperCase()}] Generating message for input: ${input}...`);
       sectionStatus(section, `Generating...`, 'info');
@@ -1464,7 +1760,10 @@
         // Putaway needs org and token for validation (Status = '3000')
         // Receiving needs org and token for validation (Status = '1000')
         
+        const validationStartTime = Date.now();
         const res = await api(`generate_${section}`, requestData);
+        const validationDuration = Date.now() - validationStartTime;
+        const generationDuration = Date.now() - generationStartTime;
         
         if (!res.success) {
           sectionStatus(section, res.error || 'Generation failed', 'error');
@@ -1556,15 +1855,35 @@
           }
           logToConsole(`[${section.toUpperCase()}] Generation failed: ${res.error}`, 'error');
           
-          // Track generation failure in Statsig
-          if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
-            window.StatsigTracking.logEvent('generate_message_failed', {
-              section: section,
-              org: org || 'unknown',
-              error: res.error || 'Generation failed',
-              timestamp: new Date().toISOString()
-            });
+          // Build validation results metadata
+          const validationResults = {};
+          if (section === 'receiving') {
+            validationResults.valid_lpns_count = res.valid ? res.valid.length : 0;
+            validationResults.invalid_lpns_count = res.invalid ? res.invalid.length : 0;
+          } else if (section === 'putaway') {
+            validationResults.valid_lpns_count = res.valid_lpns ? res.valid_lpns.length : 0;
+            validationResults.invalid_lpns_count = res.invalid_lpns ? res.invalid_lpns.length : 0;
+            validationResults.valid_locations_count = res.valid_locations ? res.valid_locations.length : 0;
+            validationResults.invalid_locations_count = res.invalid_locations ? res.invalid_locations.length : 0;
+          } else if (section === 'loading') {
+            validationResults.valid_olpns_count = res.valid_olpns ? res.valid_olpns.length : 0;
+            validationResults.invalid_olpns_count = res.invalid_olpns ? res.invalid_olpns.length : 0;
+            validationResults.missing_shipments_count = res.missing_shipments ? res.missing_shipments.length : 0;
           }
+          
+          // Track generation failure with MHE-specific metadata
+          trackEvent('generate_message_failed', {
+            section: section,
+            org: org || 'unknown',
+            error: res.error || 'Generation failed',
+            error_message: res.error || 'Generation failed',
+            lpn_list: lpns.length > 0 ? lpns : null,
+            olpn_list: olpns.length > 0 ? olpns : null,
+            location_list: locations.length > 0 ? locations : null,
+            validation_duration_ms: validationDuration,
+            generation_duration_ms: generationDuration,
+            ...validationResults
+          });
           
           // Check if auth failed
           if (res.error && (res.error.includes('Auth') || res.error.includes('token') || res.error.includes('401'))) {
@@ -1576,14 +1895,42 @@
         // Store message first
         generatedMessages[section] = res.message;
         
-        // Track generation success in Statsig
-        if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
-          window.StatsigTracking.logEvent('generate_message_completed', {
-            section: section,
-            org: org || 'unknown',
-            timestamp: new Date().toISOString()
+        // Extract shipment list for loading section
+        const shipments = [];
+        if (section === 'loading' && res.pairs_used) {
+          res.pairs_used.forEach(pair => {
+            if (pair.shipment) shipments.push(pair.shipment);
           });
         }
+        
+        // Build validation results metadata
+        const validationResults = {};
+        if (section === 'receiving' && res.lpns_used) {
+          validationResults.valid_lpns_count = res.lpns_used.length;
+        } else if (section === 'putaway' && res.pairs_used) {
+          validationResults.valid_lpns_count = res.pairs_used.length;
+          validationResults.valid_locations_count = res.pairs_used.length;
+        } else if (section === 'loading' && res.pairs_used) {
+          validationResults.valid_olpns_count = res.pairs_used.length;
+          validationResults.valid_shipments_count = shipments.length;
+        }
+        
+        // Get message size
+        const mheMessageSize = JSON.stringify(res.message).length;
+        
+        // Track generation success with MHE-specific metadata
+        trackEvent('generate_message_completed', {
+          section: section,
+          org: org || 'unknown',
+          lpn_list: lpns.length > 0 ? lpns : null,
+          olpn_list: olpns.length > 0 ? olpns : null,
+          location_list: locations.length > 0 ? locations : null,
+          shipment_list: shipments.length > 0 ? shipments : null,
+          validation_duration_ms: validationDuration,
+          generation_duration_ms: generationDuration,
+          mhe_message_size: mheMessageSize,
+          ...validationResults
+        });
         
         // Show validation details FIRST (for Receiving, Putaway, and Loading sections)
         if (section === 'receiving' || section === 'putaway' || section === 'loading') {
@@ -1674,14 +2021,22 @@
 
       const org = orgInput.value.trim();
       
-      // Track send message attempt in Statsig
-      if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
-        window.StatsigTracking.logEvent('send_message_attempt', {
-          section: section,
-          org: org || 'unknown',
-          timestamp: new Date().toISOString()
-        });
-      }
+      // Extract section-specific data for metadata
+      const lpns = extractLPNsFromInput(section);
+      const olpns = section === 'loading' ? extractOLPNsFromInput(section) : [];
+      const locations = section === 'putaway' ? extractLocationsFromInput(section) : [];
+      const mheMessageSize = JSON.stringify(generatedMessages[section]).length;
+      const sendStartTime = Date.now();
+      
+      // Track send message attempt with MHE-specific metadata
+      trackEvent('send_message_attempt', {
+        section: section,
+        org: org || 'unknown',
+        lpn_list: lpns.length > 0 ? lpns : null,
+        olpn_list: olpns.length > 0 ? olpns : null,
+        location_list: locations.length > 0 ? locations : null,
+        mhe_message_size: mheMessageSize
+      });
       
       logToConsole(`[${section.toUpperCase()}] Sending message to API...`);
       sectionStatus(section, 'Sending...', 'info');
@@ -1690,27 +2045,32 @@
       logToConsole(`[${section.toUpperCase()}] Request payload:\n${messageStr}`);
 
       try {
+        const apiStartTime = Date.now();
         const res = await api(`send_${section}`, {
           org,
           token,
           message: generatedMessages[section]
         });
+        const apiResponseTime = Date.now() - apiStartTime;
+        const sendDuration = Date.now() - sendStartTime;
         
         if (!res.success) {
           sectionStatus(section, res.error || 'Send failed', 'error');
           const errorStr = JSON.stringify(res, null, 2);
           logToConsole(`[${section.toUpperCase()}] Send failed:\n${errorStr}`, 'error');
           
-          // Track send failure in Statsig
-          if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
-            window.StatsigTracking.logEvent('send_message_failed', {
-              section: section,
-              org: org || 'unknown',
-              error: res.error || 'Send failed',
-              status_code: String(res.status_code || 'N/A'),
-              timestamp: new Date().toISOString()
-            });
-          }
+          // Track send failure with MHE-specific metadata
+          trackEvent('send_message_failed', {
+            section: section,
+            org: org || 'unknown',
+            error: res.error || 'Send failed',
+            error_message: res.error || 'Send failed',
+            api_status_code: res.status_code || null,
+            api_success: false,
+            send_duration_ms: sendDuration,
+            api_response_time_ms: apiResponseTime,
+            mhe_message_size: mheMessageSize
+          });
           
           // Check if auth failed
           if (res.error && (res.error.includes('Auth') || res.error.includes('token') || res.error.includes('401'))) {
@@ -1748,15 +2108,16 @@
         
         logToConsole(`[${section.toUpperCase()}] API Response (Status: ${res.status_code || 'N/A'}):\n${responseStr}`, res.success ? 'success' : 'error');
         
-        // Track send success in Statsig
-        if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
-          window.StatsigTracking.logEvent('send_message_completed', {
-            section: section,
-            org: org || 'unknown',
-            status_code: String(res.status_code || 'N/A'),
-            timestamp: new Date().toISOString()
-          });
-        }
+        // Track send success with MHE-specific metadata
+        trackEvent('send_message_completed', {
+          section: section,
+          org: org || 'unknown',
+          api_status_code: res.status_code || null,
+          api_success: res.success || false,
+          send_duration_ms: sendDuration,
+          api_response_time_ms: apiResponseTime,
+          mhe_message_size: mheMessageSize
+        });
         
         // Extract MessageId from response and add clickable link (works for all sections: Receiving, Putaway, Loading, etc.)
         if (res.success && res.response) {
@@ -1826,8 +2187,6 @@
       }
     }, 30000);
   </script>
-  <!-- Statsig SDK will be loaded by statsig.js -->
-  <script src="statsig.js"></script>
   <script>
     // Vercel Analytics - load the insights script
     // This script is automatically provided by Vercel when Analytics is enabled
