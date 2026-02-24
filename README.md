@@ -1,6 +1,6 @@
 # MHE Console - Web Application
 
-**Version 2.0.0** - Major Release - Core Features Complete
+**Version 2.0.1** - Major Release - Core Features Complete
 - **Receiving Section**: Fully implemented with LPN validation (Status = '1000')
 - **Putaway Section**: Fully implemented with LPN validation (Status = '3000') and Location validation (LocationTypeId = 'STORAGE')
 - **Loading Section**: Fully implemented with OLPN validation (Status in '7200', '7400', '7600') and automatic Shipment extraction

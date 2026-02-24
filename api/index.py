@@ -69,7 +69,7 @@ def ha_track():
         payload = {
             "event_name": event_name,
             "app_name": "mhe-console",
-            "app_version": "2.2.2",
+            "app_version": "2.2.3",
             **metadata,
             "timestamp": datetime.now().isoformat()
         }
@@ -523,15 +523,17 @@ def generate_putaway_message(lpn_location_pairs, user=None, org=None, lpn_data_m
         return None
     import base64
     
-    # Build base64 encoded data: user_base64_org_org-DM1
-    # Format: base64(user)_org_org-DM1
+    # Build base64 encoded data in exact expected format:
+    # base64(user)_base64(org)_base64(org-DM1)
     org_upper = (org or '').upper()
-    user_str = user or f'sdtadmin@{org_upper.lower()}' if org else 'sdtadmin@'
+    user_str = user or (f'sdtadmin@{org_upper.lower()}' if org else 'sdtadmin@')
     user_b64 = base64.b64encode(user_str.encode()).decode()
-    base64_data = f"{user_b64}_{org_upper}_{org_upper}-DM1"
+    org_b64 = base64.b64encode(org_upper.encode()).decode()
+    org_dm1_b64 = base64.b64encode(f"{org_upper}-DM1".encode()).decode()
+    base64_data = f"{user_b64}_{org_b64}_{org_dm1_b64}"
     
     # Generate one message string per LPN,Location pair
-    # Format: IBPUTAWAY^LPN^^^TotalQuantity^Location^Divert^^base64data^^^^^
+    # Exact format: IBPUTAWAY^LPN^^^TotalQuantity^Location^Divert^^base64data^^^^^^
     message_strings = []
     for pair in lpn_location_pairs:
         lpn = pair.get('lpn', '')
@@ -547,8 +549,8 @@ def generate_putaway_message(lpn_location_pairs, user=None, org=None, lpn_data_m
                                 lpn_data.get('Totalquantity') or 
                                 lpn_data.get('TOTALQUANTITY') or '0')
         
-        # New format: IBPUTAWAY^LPN^^^TotalQuantity^Location^Divert^^base64data^^^^^
-        message_str = f"IBPUTAWAY^{lpn}^^^{total_quantity}^{location}^Divert^^{base64_data}^^^^^"
+        # Exact format: IBPUTAWAY^LPN^^^TotalQuantity^Location^Divert^^base64data^^^^^^
+        message_str = f"IBPUTAWAY^{lpn}^^^{total_quantity}^{location}^Divert^^{base64_data}^^^^^^"
         message_strings.append(message_str)
     return {
         "EndpointId": MHE_ENDPOINT_ID,
