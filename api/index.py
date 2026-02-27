@@ -497,14 +497,14 @@ def validate_olpns(org, token, olpns, required_statuses=['7200', '7400', '7600']
 def generate_receiving_message(lpns):
     """
     Generate RECEIVE message format for multiple LPNs.
-    Format: RECEIVE^LPN^MHE-Receiving^
-    From Postman: "RECEIVE^LPN01330^MHE-Receiving^"
+    Format: RECEIVE^^LPN^^^^^^^
+    Example: "RECEIVE^^LPN6000005^^^^^^^"
     """
     if not lpns:
         return None
     
     # Generate one message string per LPN
-    message_strings = [f"RECEIVE^{lpn}^MHE-Receiving^" for lpn in lpns]
+    message_strings = [f"RECEIVE^^{lpn}^^^^^^^" for lpn in lpns]
     
     return {
         "EndpointId": MHE_ENDPOINT_ID,
