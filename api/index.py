@@ -575,20 +575,20 @@ def generate_picking_message(input_data):
 
 def generate_loading_message(lpn_shipment_pairs, org=None):
     """
-    Generate Olpn_Loaded message format for multiple LPN,Shipment pairs (complex with base64 encoded data)
-    From Postman: "Olpn_Loaded^^^^0000099999100002431^SHI000001118^^ZGVtb3dlYkBzcy1kZW1v_U1MtREVNTw==_U1MtREVNTy1ETTE="
+    Generate Olpn_Loaded message format for multiple LPN,Shipment pairs.
+    Format example: "Olpn_Loaded^^^^0000099999100002448^SHI000001118^"
     Args:
         lpn_shipment_pairs: List of dicts with 'lpn' and 'shipment' keys
     """
     if not lpn_shipment_pairs:
         return None
     # Generate one message string per LPN,Shipment pair
-    # Format: Olpn_Loaded^[empty]^[empty]^[empty]^[olpn]^[shipment]^[empty]^[base64 encoded org/facility data]^
+    # Format: Olpn_Loaded^[empty]^[empty]^[empty]^[olpn]^[shipment]^
     message_strings = []
     for pair in lpn_shipment_pairs:
         olpn = pair.get('lpn', '')
         shipment = pair.get('shipment', '')
-        message_str = f"Olpn_Loaded^^^^{olpn}^{shipment}^^ZGVtb3dlYkBzcy1kZW1v_U1MtREVNTw==_U1MtREVNTy1ETTE="
+        message_str = f"Olpn_Loaded^^^^{olpn}^{shipment}^"
         message_strings.append(message_str)
     return {
         "EndpointId": MHE_ENDPOINT_ID,

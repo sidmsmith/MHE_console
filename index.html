@@ -838,10 +838,10 @@
       }
       
       const shipments = [];
-      // Message format: "Olpn_Loaded^^^^{olpn}^{shipment}^^..."
+      // Message format: "Olpn_Loaded^^^^{olpn}^{shipment}^"
       messageObj.Message.forEach(msgStr => {
         const parts = msgStr.split('^');
-        // Shipment is typically the 6th part (index 5) in "Olpn_Loaded^^^^{olpn}^{shipment}^^..."
+        // Shipment is the 6th part (index 5) in "Olpn_Loaded^^^^{olpn}^{shipment}^"
         if (parts.length > 5 && parts[5]) {
           shipments.push(parts[5]);
         }
@@ -911,7 +911,7 @@
         }
         
         // Replace each OLPN in the stringified JSON with a hyperlink
-        // Format: "Olpn_Loaded^^^^{olpn}^{shipment}^^..."
+        // Format: "Olpn_Loaded^^^^{olpn}^{shipment}^"
         olpns.forEach(olpn => {
           // Escape special regex characters in OLPN
           const escapedOlpn = olpn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -926,7 +926,7 @@
         });
         
         // Replace each Shipment in the stringified JSON with a hyperlink
-        // Format: "Olpn_Loaded^^^^{olpn}^{shipment}^^..."
+        // Format: "Olpn_Loaded^^^^{olpn}^{shipment}^"
         shipments.forEach(shipment => {
           // Escape special regex characters in Shipment
           const escapedShipment = shipment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
