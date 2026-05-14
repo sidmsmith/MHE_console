@@ -12,8 +12,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 app = Flask(__name__)
 
 # === SECURE CONFIG (from Vercel Environment Variables) ===
-HA_WEBHOOK_URL = os.getenv("HA_WEBHOOK_URL", "http://sidmsmith.zapto.org:8123/api/webhook/manhattan_app_usage")
-HA_HEADERS = {"Content-Type": "application/json"}
+USAGE_INGEST_URL = os.getenv("MANHATTAN_USAGE_INGEST_URL", "").strip()
+USAGE_INGEST_SECRET = os.getenv("MANHATTAN_USAGE_INGEST_SECRET", "").strip()
 
 AUTH_HOST = "salep-auth.sce.manh.com"
 API_HOST = "salep.sce.manh.com"
@@ -27,11 +27,18 @@ if not PASSWORD or not CLIENT_SECRET:
     raise Exception("Missing MANHATTAN_PASSWORD or MANHATTAN_SECRET environment variables")
 
 # === HELPERS ===
-def send_ha_message(payload):
+def forward_usage_event(payload):
+    """POST usage JSON to Manhattan app usage dashboard ingest (Neon)."""
+    if not USAGE_INGEST_URL:
+        print("[usage] MANHATTAN_USAGE_INGEST_URL not set; event not recorded")
+        return
+    headers = {"Content-Type": "application/json"}
+    if USAGE_INGEST_SECRET:
+        headers["Authorization"] = f"Bearer {USAGE_INGEST_SECRET}"
     try:
-        requests.post(HA_WEBHOOK_URL, json=payload, headers=HA_HEADERS, timeout=5)
-    except:
-        pass
+        requests.post(USAGE_INGEST_URL, json=payload, headers=headers, timeout=8)
+    except Exception as e:
+        print(f"[usage] Forward failed: {e}")
 
 def get_manhattan_token(org):
     url = f"https://{AUTH_HOST}/oauth/token"
@@ -57,9 +64,9 @@ def app_opened():
     # Track app opened event (metadata will be added by frontend)
     return jsonify({"success": True})
 
-@app.route('/api/ha-track', methods=['POST'])
-def ha_track():
-    """Track events to Home Assistant webhook"""
+@app.route('/api/usage-track', methods=['POST'])
+def usage_track():
+    """Record usage events via centralized dashboard ingest."""
     try:
         data = request.json
         event_name = data.get('event_name')
@@ -69,16 +76,16 @@ def ha_track():
         payload = {
             "event_name": event_name,
             "app_name": "mhe-console",
-            "app_version": "2.2.3",
+            "app_version": "2.2.4",
             **metadata,
             "timestamp": datetime.now().isoformat()
         }
         
-        send_ha_message(payload)
+        forward_usage_event(payload)
         return jsonify({"success": True})
     except Exception as e:
         # Silently fail - don't interrupt user experience
-        print(f"[HA] Failed to track event: {e}")
+        print(f"[usage] Failed to track event: {e}")
         return jsonify({"success": True})  # Return success anyway
 
 @app.route('/api/auth', methods=['POST'])
