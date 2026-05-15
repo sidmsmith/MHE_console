@@ -1,1 +1,11 @@
 .vercel
+node_modules
+
+# Python bytecode and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+ENV/
