@@ -1,0 +1,35 @@
+ Be sure to add "ReplicateOrders to the Order List as well
+ 
+{
+          "ActionName": "ReplicateOrders",
+          "LabelKey": "Orders.Actions.ReplicateOrders.DisplayText",
+          "IconName": "",
+          "SupportsMultiple": false,
+          "ActionType": "navigation",
+          "EligibilityCriteria": {
+            "Condition": "(${MinimumStatus}==='1000'||${MaximumStatus}==='1000')",
+            "UID": "ActionConfig-EligibilityCriteria"
+          },
+          "Navigation": {
+            "ActionType": "external",
+            "NavigationURL": "https://ordergenerator.vercel.app/",
+            "FilterParams": [
+              {
+                "SourceAttribute": "OrderId",
+                "DestAttribute": "OrderId"
+              },
+              {
+                "SourceAttribute": "FacilityId",
+                "DestAttribute": "Location"
+              },
+              {
+                "SourceAttribute": "OrganizationId",
+                "DestAttribute": "Organization"
+              }
+            ]
+          },
+          "ActionResourceId": "sceui::dcorder::order::Assign_Pipeline",
+          "ExtensionPackId": "Replicate_Order_Action"
+        }
+		
+		
