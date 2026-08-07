@@ -74,10 +74,10 @@ def usage_track():
         
         # Build complete payload with app info and timestamp
         payload = {
+            **metadata,
             "event_name": event_name,
             "app_name": "mhe-console",
             "app_version": "2.2.4",
-            **metadata,
             "timestamp": datetime.now().isoformat()
         }
         
