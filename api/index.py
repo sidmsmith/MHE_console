@@ -77,7 +77,7 @@ def usage_track():
             **metadata,
             "event_name": event_name,
             "app_name": "mhe-console",
-            "app_version": "2.2.4",
+            "app_version": "2.3.0",
             "timestamp": datetime.now().isoformat()
         }
         
@@ -501,7 +501,103 @@ def validate_olpns(org, token, olpns, required_statuses=['7200', '7400', '7600']
         'olpn_shipment_map': olpn_shipment_map  # Map of OLPN -> Shipment from API response
     }
 
-def generate_receiving_message(lpns):
+# === CONFIGURED PARSER TEMPLATES (v2.3.0) ===
+# WM reads an MHE message with the parser template its subscriber names for (endpoint, message type):
+# Device Integration > Subscriber (EndpointId + MessageTypeId.PayloadMessageTypeId -> SourceSubscriber.ParserTemplateId)
+# > Parser Template (Delimiter, ParserTemplateSpec[]: FieldSeq + FieldName). Messages are built from that layout,
+# so they match whatever the environment has configured; the hard-coded formats are only a fallback.
+DEI_HIERARCHY = "/dmui-facade/api/dmui-facade/hierarchy/com-manh-cp-device-integration/"
+PARSER_CACHE_SECONDS = 300
+_parser_cache = {}
+
+
+def _dei_search(org, token, view, filters=None, size=500):
+    body = {"ViewName": view, "Filters": filters or [], "RequestAttributeIds": [], "SearchOptions": [], "SearchChains": [],
+            "FilterExpression": None, "Page": 0, "TotalCount": -1, "SortOrder": "asc", "MultiSort": [], "SortIndicator": "chevron-up",
+            "TimeZone": "America/New_York", "IsCommonUI": False, "ComponentShortName": None, "EnableMaxCountLimit": True,
+            "MaxCountLimit": 500, "PageQuery": None, "ChildQuery": None, "ComponentName": "com-manh-cp-device-integration",
+            "Size": size, "AdvancedFilter": False, "ConfigGroupType": view, "RuleType": None, "QueryFilter": None}
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json",
+               "selectedOrganization": org.upper(), "selectedLocation": f"{org.upper()}-DM1"}
+    r = requests.post(f"https://{API_HOST}{DEI_HIERARCHY}{view}", json=body, headers=headers, timeout=60, verify=False)
+    r.raise_for_status()
+    return ((r.json() or {}).get("data") or {}).get("Results") or []
+
+
+def _ref(value, key):
+    """Hierarchy references come back as {'EndpointId': 'X'} or as a plain value."""
+    return value.get(key) if isinstance(value, dict) else value
+
+
+def get_parser_template(org, token, message_type, endpoint_id=None):
+    """(template, error): the parser template WM uses for this message type on our endpoint.
+    template = {'id', 'delimiter', 'fields': [(seq, name), ...], 'endpoint'} (one line; first field per position)."""
+    endpoint_id = endpoint_id or MHE_ENDPOINT_ID
+    key = (org.upper(), endpoint_id, message_type)
+    hit = _parser_cache.get(key)
+    if hit and datetime.now().timestamp() - hit[0] < PARSER_CACHE_SECONDS:
+        return hit[1], None
+    try:
+        subs = _dei_search(org, token, "Subscriber")
+        sub = next((s for s in subs if _ref(s.get("EndpointId"), "EndpointId") == endpoint_id
+                    and _ref(s.get("MessageTypeId") or s.get("PayloadMessageType"), "PayloadMessageTypeId") == message_type
+                    and _ref(s.get("SourceSubscriber") or {}, "ParserTemplateId")), None)
+        if not sub:
+            return None, f"no subscriber for {message_type} on {endpoint_id}"
+        parser_id = _ref(sub["SourceSubscriber"], "ParserTemplateId")
+        if isinstance(parser_id, dict):
+            parser_id = parser_id.get("ParserTemplateId")
+        rows = _dei_search(org, token, "ParserTemplate", [{"ViewName": "ParserTemplate", "AttributeId": "ParserTemplateId", "DataType": "string",
+                                                          "requiredFilter": False, "Operator": "=", "FilterValues": [parser_id], "negativeFilter": False}], 25)
+        tpl = next((x for x in rows if x.get("ParserTemplateId") == parser_id), None)
+        if not tpl:
+            return None, f"parser template {parser_id} not found"
+        seen, fields = set(), []
+        for s in sorted(tpl.get("ParserTemplateSpec") or [], key=lambda s: (s.get("FieldSeq") or 0)):
+            seq = s.get("FieldSeq")
+            if seq is None or seq in seen:
+                continue          # multi-line templates repeat a position per line type: the first line is the message
+            seen.add(seq)
+            fields.append((seq, s.get("FieldName") or ""))
+        if not fields:
+            return None, f"parser template {parser_id} has no fields"
+        delim = tpl.get("Delimiter") or "^"
+        if isinstance(delim, dict):
+            delim = next((v for v in delim.values() if isinstance(v, str) and v), "^")
+        template = {"id": parser_id, "delimiter": delim, "fields": fields, "endpoint": endpoint_id}
+        _parser_cache[key] = (datetime.now().timestamp(), template)
+        return template, None
+    except Exception as e:  # the hard-coded format is used instead; the console shows why
+        return None, f"parser lookup failed: {e}"
+
+
+def _norm(name):
+    return "".join(ch for ch in (name or "").lower() if ch.isalnum())
+
+
+def build_from_parser(template, message_type, values):
+    """One message string laid out by the parser: each field's value from `values` (matched by field name,
+    case and punctuation ignored; MessageType is the message type), empty when we have none."""
+    vals = {_norm(k): v for k, v in values.items()}
+    vals["messagetype"] = message_type
+    seqs = [s for s, _ in template["fields"]]
+    base = 0 if min(seqs) == 0 else 1          # some templates number fields from 0, most from 1
+    parts = [""] * (max(seqs) - base + 1)
+    for seq, name in template["fields"]:
+        v = vals.get(_norm(name))
+        parts[seq - base] = "" if v is None else str(v)
+    return template["delimiter"].join(parts)
+
+
+def parser_info(template, error, message_type, example):
+    """What the page's console shows about how the message was built."""
+    if template:
+        return {"source": "configured", "message_type": message_type, "endpoint": template["endpoint"], "parser": template["id"],
+                "fields": [f"{s}:{n}" for s, n in template["fields"]], "example": example}
+    return {"source": "built-in", "message_type": message_type, "reason": error, "example": example}
+
+
+def generate_receiving_message(lpns, template=None):
     """
     Generate RECEIVE message format for multiple LPNs.
     Format: RECEIVE^^LPN^^^^^^^
@@ -511,14 +607,15 @@ def generate_receiving_message(lpns):
         return None
     
     # Generate one message string per LPN
-    message_strings = [f"RECEIVE^^{lpn}^^^^^^^" for lpn in lpns]
+    message_strings = ([build_from_parser(template, "RECEIVE", {"LpnId": lpn, "IlpnId": lpn, "ContainerId": lpn}) for lpn in lpns]
+                       if template else [f"RECEIVE^^{lpn}^^^^^^^" for lpn in lpns])   # configured parser, else built-in
     
     return {
         "EndpointId": MHE_ENDPOINT_ID,
         "Message": message_strings
     }
 
-def generate_putaway_message(lpn_location_pairs, user=None, org=None, lpn_data_map=None):
+def generate_putaway_message(lpn_location_pairs, user=None, org=None, lpn_data_map=None, template=None):
     """
     Generate IBPUTAWAY message format for multiple LPN,Location pairs (complex pipe-delimited)
     New format: "IBPUTAWAY^LPN^^^TotalQuantity^Location^Divert^^base64data^^^^^"
@@ -557,7 +654,9 @@ def generate_putaway_message(lpn_location_pairs, user=None, org=None, lpn_data_m
                                 lpn_data.get('TOTALQUANTITY') or '0')
         
         # Exact format: IBPUTAWAY^LPN^^^TotalQuantity^Location^Divert^^base64data^^^^^^
-        message_str = f"IBPUTAWAY^{lpn}^^^{total_quantity}^{location}^Divert^^{base64_data}^^^^^^"
+        message_str = (build_from_parser(template, "IBPUTAWAY", {"ContainerId": lpn, "LpnId": lpn, "IlpnId": lpn, "Quantity": total_quantity,
+                                                                 "LocationId": location, "Divert": "Divert", "WMContextId": base64_data})
+                       if template else f"IBPUTAWAY^{lpn}^^^{total_quantity}^{location}^Divert^^{base64_data}^^^^^^")
         message_strings.append(message_str)
     return {
         "EndpointId": MHE_ENDPOINT_ID,
@@ -580,7 +679,7 @@ def generate_picking_message(input_data):
         "Message": [message_str]
     }
 
-def generate_loading_message(lpn_shipment_pairs, org=None):
+def generate_loading_message(lpn_shipment_pairs, org=None, template=None):
     """
     Generate Olpn_Loaded message format for multiple LPN,Shipment pairs.
     Format example: "Olpn_Loaded^^^^0000099999100002448^SHI000001118^"
@@ -595,7 +694,8 @@ def generate_loading_message(lpn_shipment_pairs, org=None):
     for pair in lpn_shipment_pairs:
         olpn = pair.get('lpn', '')
         shipment = pair.get('shipment', '')
-        message_str = f"Olpn_Loaded^^^^{olpn}^{shipment}^"
+        message_str = (build_from_parser(template, "Olpn_Loaded", {"OlpnId": olpn, "ShipmentId": shipment})
+                       if template else f"Olpn_Loaded^^^^{olpn}^{shipment}^")
         message_strings.append(message_str)
     return {
         "EndpointId": MHE_ENDPOINT_ID,
@@ -712,14 +812,16 @@ def generate_receiving():
                 "validation_response": validation_result.get('response')
             })
     
-    message = generate_receiving_message(lpns)
+    template, parser_error = get_parser_template(org, token, "RECEIVE") if org and token else (None, "not signed in")
+    message = generate_receiving_message(lpns, template)
     if not message:
         return jsonify({"success": False, "error": "Failed to generate message"})
     
     result = {
         "success": True, 
         "message": message, 
-        "lpns_used": lpns
+        "lpns_used": lpns,
+        "parser": parser_info(template, parser_error, "RECEIVE", message["Message"][0])
     }
     
     # Include validation details if validation was performed
@@ -832,14 +934,16 @@ def generate_putaway():
     # Get lpn_data_map from validation result to extract TotalQuantity
     lpn_data_map = lpn_validation_result.get('lpn_data', {}) if lpn_validation_result else {}
     
-    message = generate_putaway_message(pairs, org=org, lpn_data_map=lpn_data_map)
+    template, parser_error = get_parser_template(org, token, "IBPUTAWAY") if org and token else (None, "not signed in")
+    message = generate_putaway_message(pairs, org=org, lpn_data_map=lpn_data_map, template=template)
     if not message:
         return jsonify({"success": False, "error": "Failed to generate message"})
     
     result = {
         "success": True, 
         "message": message, 
-        "pairs_used": pairs  # Return pairs instead of just LPNs
+        "pairs_used": pairs,
+        "parser": parser_info(template, parser_error, "IBPUTAWAY", message["Message"][0])
     }
     
     # Include validation details if validation was performed
@@ -979,14 +1083,16 @@ def generate_loading():
             "error": "Validation required to extract shipment information from OLPNs"
         })
     
-    message = generate_loading_message(pairs, org=org)
+    template, parser_error = get_parser_template(org, token, "Olpn_Loaded") if org and token else (None, "not signed in")
+    message = generate_loading_message(pairs, org=org, template=template)
     if not message:
         return jsonify({"success": False, "error": "Failed to generate message"})
     
     result = {
         "success": True, 
         "message": message, 
-        "pairs_used": pairs  # Return pairs with shipment extracted from API
+        "pairs_used": pairs,
+        "parser": parser_info(template, parser_error, "Olpn_Loaded", message["Message"][0])
     }
     
     # Include validation details if validation was performed

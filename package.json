@@ -1,6 +1,6 @@
 {
   "name": "MHE_console",
-  "version": "2.2.4",
+  "version": "2.3.0",
   "private": true,
   "scripts": {
     "dev": "vercel dev",
