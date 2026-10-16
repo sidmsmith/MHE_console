@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MHE Console v2.3.1</title>
+  <title>MHE Console v2.4.0</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -409,6 +409,43 @@
       color: #868e96;
     }
 
+    .status-icon.partial {
+      background-color: #fcc419;
+      color: #212529;
+    }
+
+    .status-icon.none {
+      background-color: #fa5252;
+      color: white;
+    }
+
+    .status-text.partial {
+      color: #fcc419;
+    }
+
+    .status-text.none {
+      color: #fa5252;
+    }
+
+    /* Endpoints modal: one row per endpoint, click to start / stop */
+    .endpoint-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .endpoint-row-name {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+
+    .endpoint-row-name small {
+      color: #999;
+      font-size: 0.8em;
+    }
+
 
     /* Tooltip for status indicator - larger for emphasis */
     .endpoint-status {
@@ -493,7 +530,7 @@
         <!-- Title - Centered independently with wrapper for alignment -->
         <div style="position: relative; display: flex; align-items: center; justify-content: center; min-height: 2rem; margin-bottom: 0.5rem;">
           <h2 class="text-center mb-0" style="flex: 1;">
-            <a href="#" id="titleLink" class="text-decoration-none" title="MHE Console" target="_blank" style="color: var(--primary); cursor: pointer;">MHE Console v2.3.1</a>
+            <a href="#" id="titleLink" class="text-decoration-none" title="MHE Console" target="_blank" style="color: var(--primary); cursor: pointer;">MHE Console v2.4.0</a>
           </h2>
         </div>
 
@@ -597,9 +634,9 @@
           </div>
           <div class="section-content" id="picking-content">
             <div>
-              <label class="form-label">Input (Tasks):</label>
-              <input type="text" id="picking-input" class="form-control" placeholder="Enter input" />
-			  <small class="text-muted">Multiple Picking tasks supported. Separate with spaces, commas, or semicolons. Case-sensitive.</small>
+              <label class="form-label">Input (oLPN or oLPN,Item,Qty):</label>
+              <input type="text" id="picking-input" class="form-control" placeholder="oLPN  or  oLPN,Item,Qty" />
+			  <small class="text-muted">oLPN = pick everything left on it. oLPN,Item,Qty = pick that quantity (one line at a time - the oLPN packs on its last unit). Separate entries with semicolons. Case-sensitive.</small>
             </div>
             <div class="section-buttons">
               <button class="btn btn-success" onclick="generateMessage('picking')">Generate MHE Message</button>
@@ -652,6 +689,22 @@
         </div>
         <div class="modal-body">
           <div class="list-group" id="themeList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENDPOINTS MODAL -->
+  <div class="modal fade" id="endpointsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Endpoints</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-2">Each message goes through our endpoint and the WM endpoint for its type. A stopped one never processes the message. Click an endpoint to start or stop it.</p>
+          <div class="list-group" id="endpointList"></div>
         </div>
       </div>
     </div>
@@ -1079,231 +1132,130 @@
       });
     }
 
-    // ENDPOINT STATUS INDICATOR
-    // Function to update endpoint status
-    // Usage: updateEndpointStatus('Started'), updateEndpointStatus('Stopped'), or updateEndpointStatus('Offline')
-    function updateEndpointStatus(status) {
+    // ENDPOINT STATUS INDICATOR (v2.4.0)
+    // A message passes through our endpoint and the WM endpoint for its type (Receiving -> WMReceivingService, Picking ->
+    // WMPickingService, ...). The header icon sums them up: green = all started, yellow = some, red = none. Clicking it
+    // opens the list, where each endpoint starts / stops on its own.
+    let endpointList = [];
+    const endpointsModal = new bootstrap.Modal(document.getElementById('endpointsModal'));
+
+    function updateEndpointStatus(summary) {
       const icon = document.getElementById('endpointStatusIcon');
       const text = document.getElementById('endpointStatusText');
       const container = document.getElementById('endpointStatusContainer');
       const tooltip = document.getElementById('statusTooltip');
-      
-      if (status === 'Started') {
-        icon.className = 'status-icon started';
-        icon.textContent = '✓';
-        text.className = 'status-text started';
-        text.textContent = 'Started';
-        container.className = 'endpoint-status ms-3 clickable';
-        tooltip.textContent = 'Stop Endpoint';
-      } else if (status === 'Stopped') {
-        icon.className = 'status-icon stopped';
-        icon.textContent = '○';
-        text.className = 'status-text stopped';
-        text.textContent = 'Stopped';
-        container.className = 'endpoint-status ms-3 clickable';
-        tooltip.textContent = 'Start Endpoint';
-      } else if (status === 'Offline') {
-        icon.className = 'status-icon offline';
-        icon.textContent = '✕';
-        text.className = 'status-text offline';
-        text.textContent = 'Offline';
-        container.className = 'endpoint-status ms-3 not-clickable';
-        tooltip.textContent = 'Endpoint is offline - cannot connect to check status';
-      } else {
-        // Unknown/checking status
-        icon.className = 'status-icon offline';
-        icon.textContent = '?';
-        text.className = 'status-text';
-        text.textContent = 'Checking...';
-        container.className = 'endpoint-status ms-3 not-clickable';
-        tooltip.textContent = '';
-      }
+      const states = {
+        all:     ['started', '✓', 'All Started', 'clickable'],
+        some:    ['partial', '!', null, 'clickable'],
+        none:    ['none', '✕', 'All Stopped', 'clickable'],
+        offline: ['offline', '✕', 'Offline', 'not-clickable'],
+        checking:['offline', '?', 'Checking...', 'not-clickable']
+      };
+      const [cls, glyph, label, click] = states[summary] || states.checking;
+      const started = endpointList.filter(e => e.status === 'Started').length;
+      icon.className = `status-icon ${cls}`;
+      icon.textContent = glyph;
+      text.className = `status-text ${cls}`;
+      text.textContent = label || `${started} of ${endpointList.length} Started`;
+      container.className = `endpoint-status ms-3 ${click}`;
+      tooltip.textContent = click === 'clickable' ? 'Show endpoints' : (summary === 'offline' ? 'Authenticate to check the endpoints' : '');
     }
 
-    // Toggle endpoint status (start/stop)
-    async function toggleEndpointStatus() {
-      if (!token) {
-        console.log('[ENDPOINT_TOGGLE] No token');
-        return;
-      }
-      
-      const org = orgInput.value.trim();
-      if (!org) {
-        console.log('[ENDPOINT_TOGGLE] No org');
-        return;
-      }
+    function endpointSummary() {
+      if (!endpointList.length) return 'offline';
+      const started = endpointList.filter(e => e.status === 'Started').length;
+      return started === endpointList.length ? 'all' : started === 0 ? 'none' : 'some';
+    }
 
-      const currentStatus = document.getElementById('endpointStatusText').textContent;
-      
-      // Don't allow toggling if offline or checking
-      if (currentStatus === 'Offline' || currentStatus === 'Checking...') {
-        console.log('[ENDPOINT_TOGGLE] Cannot toggle - endpoint is offline or checking');
-        return;
-      }
-
-      const action = currentStatus === 'Started' ? 'stop' : 'start';
-      const actionText = currentStatus === 'Started' ? 'Stopping' : 'Starting';
-      
-      console.log(`[ENDPOINT_TOGGLE] ${actionText} endpoint...`);
-      
-      // Show loading state
-      const originalStatus = currentStatus;
-      const toggleStartTime = Date.now();
-      
-      // Track endpoint action
-      trackEvent('endpoint_action', {
-        endpoint_action: action,
-        endpoint_status_before: originalStatus,
-        org: org || 'unknown'
+    function renderEndpointList() {
+      const list = document.getElementById('endpointList');
+      list.innerHTML = '';
+      endpointList.forEach((e, i) => {
+        const cls = e.status === 'Started' ? 'started' : e.status === 'Stopped' ? 'none' : 'offline';
+        const glyph = e.status === 'Started' ? '✓' : e.status === 'Stopped' ? '○' : (e.busy ? '…' : '✕');
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'list-group-item list-group-item-action endpoint-row';
+        row.disabled = !!e.busy || !(e.status === 'Started' || e.status === 'Stopped');
+        row.title = e.status === 'Started' ? 'Stop this endpoint' : e.status === 'Stopped' ? 'Start this endpoint' : '';
+        row.innerHTML = `<span class="status-icon ${e.busy ? 'offline' : cls}">${e.busy ? '…' : glyph}</span>
+          <span class="endpoint-row-name">${e.endpoint}<small>${e.sections.join(', ')}</small></span>
+          <span class="status-text ${e.busy ? 'offline' : cls}">${e.busy ? 'Working...' : e.status}</span>`;
+        row.addEventListener('click', () => toggleEndpoint(i));
+        list.appendChild(row);
       });
-      
-      updateEndpointStatus('Checking...');
-      
-      try {
-        const res = await api(`endpoint_${action}`, { org, token });
-        const toggleDuration = Date.now() - toggleStartTime;
-        console.log(`[ENDPOINT_TOGGLE] ${actionText} response:`, res);
-        
-        if (res.success) {
-          logToConsole(`Endpoint ${action}ed successfully`, 'success');
-          
-          // Track endpoint action success
-          trackEvent('endpoint_action_completed', {
-            endpoint_action: action,
-            endpoint_status_before: originalStatus,
-            endpoint_status_after: res.status || 'Unknown',
-            org: org || 'unknown',
-            action_duration_ms: toggleDuration,
-            api_success: true
-          });
-          
-          // Wait a moment then check status again
-          setTimeout(() => {
-            checkEndpointStatus();
-          }, 1000);
-        } else {
-          logToConsole(`Failed to ${action} endpoint: ${res.error || 'Unknown error'}`, 'error');
-          
-          // Track endpoint action failure
-          trackEvent('endpoint_action_failed', {
-            endpoint_action: action,
-            endpoint_status_before: originalStatus,
-            org: org || 'unknown',
-            error: res.error || 'Unknown error',
-            error_message: res.error || 'Unknown error',
-            action_duration_ms: toggleDuration,
-            api_success: false
-          });
-          
-          // Restore original status on failure
-          updateEndpointStatus(originalStatus);
-        }
-      } catch (e) {
-        console.error(`[ENDPOINT_TOGGLE] Exception:`, e);
-        logToConsole(`Error ${actionText.toLowerCase()} endpoint: ${e.message}`, 'error');
-        
-        // Track endpoint action error
-        trackEvent('endpoint_action_failed', {
-          endpoint_action: action,
-          endpoint_status_before: originalStatus,
-          org: org || 'unknown',
-          error: e.message || 'Unknown error',
-          error_message: e.message || 'Unknown error',
-          action_duration_ms: Date.now() - toggleStartTime,
-          api_success: false
-        });
-        
-        // Restore original status on error
-        updateEndpointStatus(originalStatus);
-      }
     }
-    
-    // Check endpoint status via API
-    async function checkEndpointStatus() {
-      if (!token) {
-        console.log('[ENDPOINT_STATUS] No token, setting Offline');
-        updateEndpointStatus('Offline');
-        return;
-      }
-      
-      const org = orgInput.value.trim();
-      if (!org) {
-        console.log('[ENDPOINT_STATUS] No org, setting Offline');
-        updateEndpointStatus('Offline');
-        return;
-      }
-      
-      const statusCheckStartTime = Date.now();
-      
-      try {
-        console.log('[ENDPOINT_STATUS] Calling API...');
-        const res = await api('endpoint_status', { org, token });
-        const statusCheckDuration = Date.now() - statusCheckStartTime;
-        console.log('[ENDPOINT_STATUS] API Response:', res);
-        
-        if (res.success && res.status) {
-          // Use the actual status from API: 'Started' or 'Stopped'
-          const status = res.status === 'Started' ? 'Started' : res.status === 'Stopped' ? 'Stopped' : 'Offline';
-          console.log(`[ENDPOINT_STATUS] Success: status=${status}`);
-          updateEndpointStatus(status);
-          
-          // Track endpoint status check (only on initial check after auth, not periodic checks)
-          // This will be called from authenticate() after successful auth
-          if (window._trackEndpointStatusAfterAuth) {
-            trackEvent('endpoint_status_checked', {
-              endpoint_status: status,
-              org: org || 'unknown',
-              status_check_duration_ms: statusCheckDuration,
-              api_success: true
-            });
-            window._trackEndpointStatusAfterAuth = false;
-          }
-        } else {
-          // API call failed or no status - connection issue
-          console.log(`[ENDPOINT_STATUS] API call failed or no status:`, res.error);
-          updateEndpointStatus('Offline');
-          
-          // Track endpoint status check failure
-          if (window._trackEndpointStatusAfterAuth) {
-            trackEvent('endpoint_status_checked', {
-              endpoint_status: 'Offline',
-              org: org || 'unknown',
-              error: res.error || 'Status check failed',
-              status_check_duration_ms: statusCheckDuration,
-              api_success: false
-            });
-            window._trackEndpointStatusAfterAuth = false;
-          }
-        }
-      } catch (e) {
-        // Exception means connection failure
-        console.error('[ENDPOINT_STATUS] Exception:', e);
-        updateEndpointStatus('Offline');
-        
-        // Track endpoint status check error
-        if (window._trackEndpointStatusAfterAuth) {
-          trackEvent('endpoint_status_checked', {
-            endpoint_status: 'Offline',
-            org: org || 'unknown',
-            error: e.message || 'Connection failure',
-            error_message: e.message || 'Connection failure',
-            status_check_duration_ms: Date.now() - statusCheckStartTime,
-            api_success: false
-          });
-          window._trackEndpointStatusAfterAuth = false;
-        }
-      }
-    }
-    
-    // Initialize endpoint status - check after authentication
-    updateEndpointStatus('Offline'); // Start as Offline until we check
 
-    // Add click handler to entire endpoint status container
-    document.getElementById('endpointStatusContainer').addEventListener('click', () => {
-      const currentStatus = document.getElementById('endpointStatusText').textContent;
-      if (currentStatus === 'Started' || currentStatus === 'Stopped') {
-        toggleEndpointStatus();
+    async function toggleEndpoint(i) {
+      const e = endpointList[i];
+      const org = orgInput.value.trim();
+      if (!token || !org || !e || e.busy) return;
+      const action = e.status === 'Started' ? 'stop' : 'start';
+      const before = e.status;
+      const startTime = Date.now();
+      trackEvent('endpoint_action', { endpoint_action: action, endpoint_id: e.endpoint, endpoint_status_before: before, org: org || 'unknown' });
+      e.busy = true;
+      renderEndpointList();
+      try {
+        const res = await api(`endpoint_${action}`, { org, token, endpoint_id: e.endpoint });
+        if (res.success) {
+          logToConsole(`Endpoint ${e.endpoint} ${action === 'start' ? 'started' : 'stopped'}`, 'success');
+        } else {
+          logToConsole(`Failed to ${action} endpoint ${e.endpoint}: ${res.error || 'Unknown error'}`, 'error');
+        }
+        trackEvent(res.success ? 'endpoint_action_completed' : 'endpoint_action_failed', {
+          endpoint_action: action, endpoint_id: e.endpoint, endpoint_status_before: before, org: org || 'unknown',
+          action_duration_ms: Date.now() - startTime, api_success: !!res.success, error: res.success ? undefined : (res.error || 'Unknown error')
+        });
+      } catch (err) {
+        logToConsole(`Error trying to ${action} endpoint ${e.endpoint}: ${err.message}`, 'error');
       }
+      setTimeout(() => { e.busy = false; checkEndpointStatus(); }, 1000);
+    }
+
+    // Check every endpoint via API
+    async function checkEndpointStatus() {
+      const org = orgInput.value.trim();
+      if (!token || !org) {
+        endpointList = [];
+        updateEndpointStatus('offline');
+        return;
+      }
+      const startTime = Date.now();
+      try {
+        const res = await api('endpoints_status', { org, token });
+        if (res.success && res.endpoints) {
+          const busy = new Set(endpointList.filter(e => e.busy).map(e => e.endpoint));
+          endpointList = res.endpoints.map(e => ({ ...e, busy: busy.has(e.endpoint) }));
+        } else {
+          endpointList = [];
+        }
+      } catch (e) {
+        console.error('[ENDPOINT_STATUS] Exception:', e);
+        endpointList = [];
+      }
+      const summary = endpointSummary();
+      updateEndpointStatus(summary);
+      renderEndpointList();
+      if (window._trackEndpointStatusAfterAuth) {
+        trackEvent('endpoint_status_checked', {
+          endpoint_status: summary, org: org || 'unknown', status_check_duration_ms: Date.now() - startTime,
+          endpoints_started: endpointList.filter(e => e.status === 'Started').length, endpoints_total: endpointList.length,
+          api_success: endpointList.length > 0
+        });
+        window._trackEndpointStatusAfterAuth = false;
+      }
+    }
+
+    // Initialize endpoint status - check after authentication
+    updateEndpointStatus('offline');
+
+    // The header indicator opens the endpoint list
+    document.getElementById('endpointStatusContainer').addEventListener('click', () => {
+      if (!token || !endpointList.length) return;
+      renderEndpointList();
+      endpointsModal.show();
+      checkEndpointStatus();
     });
 
     // CONSOLE OUTPUT
@@ -1985,7 +1937,13 @@
           }
         }
         
-                // How the message was laid out: the environment's configured parser template, or the built-in format
+                // Picking: one message per task line
+        if (section === 'picking' && res.picks) {
+          const picksStr = res.picks.map(p => `${p.olpn} ${p.item} x ${p.qty} (task ${p.task}, from ${p.location})`).join('\n  ');
+          logToConsole(`[${section.toUpperCase()}] Picks included in message:\n  ${picksStr}`, 'success');
+        }
+
+        // How the message was laid out: the environment's configured parser template, or the built-in format
         if (res.parser) {
           const pz = res.parser;
           if (pz.source === 'configured') {

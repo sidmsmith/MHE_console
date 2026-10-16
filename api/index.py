@@ -1,6 +1,7 @@
 # api/index.py
 from flask import Flask, request, jsonify, send_from_directory
 import json
+import re
 import os
 import requests
 from requests.auth import HTTPBasicAuth
@@ -77,7 +78,7 @@ def usage_track():
             **metadata,
             "event_name": event_name,
             "app_name": "mhe-console",
-            "app_version": "2.3.1",
+            "app_version": "2.4.0",
             "timestamp": datetime.now().isoformat()
         }
         
@@ -108,6 +109,8 @@ ENDPOINT_STOP_PATH = "/device-integration/api/deviceintegration/service/endpoint
 MHE_API_PATH = "/device-integration/api/deviceintegration/process"
 ILPN_SEARCH_PATH = "/dcinventory/api/dcinventory/ilpn/search"
 LOCATION_SEARCH_PATH = "/dcinventory/api/dcinventory/location/search"
+INVENTORY_SEARCH_PATH = "/dcinventory/api/dcinventory/inventory/search"
+TASK_SEARCH_PATH = "/task/api/task/task/search"
 OLPN_SEARCH_PATH = "/pickpack/api/pickpack/olpn/search"
 
 def parse_lpns(input_text):
@@ -292,6 +295,34 @@ def validate_lpns(org, token, lpns, required_status='1000', log_callback=None):
         'response': response_data,
         'lpn_data': lpn_data_map
     }
+
+def lpn_contents(org, token, lpns):
+    """{lpn: {'TotalQuantity', 'ItemId'}} from inventory search - the iLPN record itself carries no quantity."""
+    if not lpns:
+        return {}
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json",
+               "selectedOrganization": org.upper(), "selectedLocation": f"{org.upper()}-DM1"}
+    query = "IlpnId in ('" + "','".join(lpns) + "')"
+    try:
+        r = requests.post(f"https://{API_HOST}{INVENTORY_SEARCH_PATH}", json={"Query": query, "Size": 1000},
+                          headers=headers, timeout=60, verify=False)
+        rows = ((r.json() or {}).get("data") or []) if r.status_code == 200 else []
+    except Exception:
+        rows = []
+    out = {}
+    for row in rows:
+        lpn = row.get("IlpnId") or row.get("InventoryContainerId")
+        if not lpn:
+            continue
+        cur = out.setdefault(lpn, {"TotalQuantity": 0, "ItemId": row.get("ItemId")})
+        cur["TotalQuantity"] += row.get("OnHand") or 0
+        if cur["ItemId"] != row.get("ItemId"):
+            cur["ItemId"] = ""          # mixed-item LPN: leave the item out of the message
+    for v in out.values():
+        q = v["TotalQuantity"]
+        v["TotalQuantity"] = int(q) if float(q).is_integer() else q
+    return out
+
 
 def validate_locations(org, token, locations, log_callback=None):
     """
@@ -654,7 +685,8 @@ def generate_putaway_message(lpn_location_pairs, user=None, org=None, lpn_data_m
                                 lpn_data.get('TOTALQUANTITY') or '0')
         
         # Exact format: IBPUTAWAY^LPN^^^TotalQuantity^Location^Divert^^base64data^^^^^^
-        message_str = (build_from_parser(template, "IBPUTAWAY", {"ContainerId": lpn, "LpnId": lpn, "IlpnId": lpn, "Quantity": total_quantity,
+        item_id = ((lpn_data_map or {}).get(lpn) or {}).get("ItemId") or ""
+        message_str = (build_from_parser(template, "IBPUTAWAY", {"ContainerId": lpn, "LpnId": lpn, "IlpnId": lpn, "ItemId": item_id, "Quantity": total_quantity,
                                                                  "LocationId": location, "Divert": "Divert", "WMContextId": base64_data})
                        if template else f"IBPUTAWAY^{lpn}^^^{total_quantity}^{location}^Divert^^{base64_data}^^^^^^")
         message_strings.append(message_str)
@@ -663,21 +695,137 @@ def generate_putaway_message(lpn_location_pairs, user=None, org=None, lpn_data_m
         "Message": message_strings
     }
 
-def generate_picking_message(input_data):
-    """
-    Generate PICKING message format (very complex pipe-delimited)
-    From Postman: "PICKING^DG98700028^1^PICK1909^^0000099999100011136^^^^OLPN^4000041^^^^^^^^^^3^^^^^^^^^^"
-    This is a placeholder - actual format depends on specific requirements
-    """
-    if not input_data:
+def wm_context(org, user=None):
+    """WMContextId for messages that carry one: base64(user)_base64(org)_base64(org-DM1)."""
+    import base64
+    org_upper = (org or '').upper()
+    user_str = user or (f'sdtadmin@{org_upper.lower()}' if org else 'sdtadmin@')
+    enc = lambda s: base64.b64encode(s.encode()).decode()
+    return f"{enc(user_str)}_{enc(org_upper)}_{enc(org_upper + '-DM1')}"
+
+
+# === PICKING (v2.4.0) ===
+# One PICKING message per task line: WM commits the move (pickpack/pick/commitPickMove, "Pick To oLPN") and, once the
+# oLPN's last unit is picked, completes the task and packs the oLPN (7200) by itself. CloseIndicator stays false:
+# with it set WM closes the oLPN and ignores that message's quantity (confirmed in SS-DEMO 2026-10-15 - an oLPN closed
+# with nothing picked is canceled). Input per entry: "oLPN" = pick every open line, "oLPN,Item,Qty" = pick that much.
+OPEN_OLPN_STATUSES = {"1000", "7100"}       # Created / Packing
+
+
+def _mawm_headers(org, token):
+    return {"Authorization": f"Bearer {token}", "Content-Type": "application/json",
+            "selectedOrganization": org.upper(), "selectedLocation": f"{org.upper()}-DM1"}
+
+
+def _search(org, token, path, query, size=200):
+    r = requests.post(f"https://{API_HOST}{path}", json={"Query": query, "Size": size, "Page": 0},
+                      headers=_mawm_headers(org, token), timeout=60, verify=False)
+    if r.status_code != 200:
+        raise RuntimeError(f"{path.rsplit('/', 2)[-2]} search failed: {r.status_code} {r.text[:200]}")
+    return (r.json() or {}).get("data") or []
+
+
+def open_pick_lines(org, token, olpn):
+    """(lines, error): this oLPN's open pick lines - task, line, order, item, location and the quantity still to pick."""
+    olpns = _search(org, token, OLPN_SEARCH_PATH, f"OlpnId = '{olpn}'", 5)
+    if not olpns:
+        return [], f"oLPN {olpn} not found"
+    status = str(olpns[0].get("Status") or "")
+    if status not in OPEN_OLPN_STATUSES:
+        return [], f"oLPN {olpn} is status {status} - only Created (1000) or Packing (7100) oLPNs can be picked"
+    tasks = _search(org, token, TASK_SEARCH_PATH, f"TaskDetail.OlpnId = '{olpn}' and TransactionTypeId = 'Pick' and Status != '8000' and Status != '9000'", 20)
+    lines = []
+    for task in tasks:
+        for d in task.get("TaskDetail") or []:
+            if d.get("OlpnId") != olpn or str(d.get("Status") or "") in ("8000", "9000"):
+                continue
+            if (d.get("SourceContainerTypeId") or "LOCATION") != "LOCATION":
+                return [], f"task {task.get('TaskId')} picks from a {d.get('SourceContainerTypeId')} - only location picks are supported"
+            left = float(d.get("Quantity") or 0) - float(d.get("CompletedQuantity") or 0)
+            if left > 0:
+                lines.append({"task": task.get("TaskId"), "line": d.get("TaskDetailId"), "order": d.get("OrderId"), "order_line": d.get("OrderLineId"),
+                              "item": d.get("ItemId"), "location": d.get("SourceLocationId"), "left": left})
+    if not lines:
+        return [], f"oLPN {olpn} has no open pick lines (status {status})"
+    return lines, None
+
+
+def parse_picking_input(text):
+    """'oLPN' or 'oLPN,Item,Qty' entries, separated by semicolons or new lines (a line of bare oLPNs may also use spaces)."""
+    entries = []
+    for part in re.split(r"[;\n]+", text or ""):
+        part = part.strip()
+        if not part:
+            continue
+        bits = [b.strip() for b in part.split(",") if b.strip()]
+        if len(bits) == 3:
+            entries.append({"olpn": bits[0], "item": bits[1], "qty": bits[2]})
+        elif len(bits) == 1:
+            entries.extend({"olpn": o} for o in bits[0].split())
+        else:
+            entries.append({"error": f"'{part}': use oLPN or oLPN,Item,Qty"})
+    return entries
+
+
+def plan_picks(org, token, entries):
+    """(picks, errors): one pick per task line - everything left for 'oLPN', or the asked quantity spread over the item's lines."""
+    picks, errors, cache = [], [], {}
+    for e in entries:
+        if e.get("error"):
+            errors.append(e["error"])
+            continue
+        olpn = e["olpn"]
+        if olpn not in cache:
+            cache[olpn] = open_pick_lines(org, token, olpn)
+        lines, err = cache[olpn]
+        if err:
+            errors.append(err)
+            continue
+        if "item" not in e:
+            for l in lines:
+                picks.append({**l, "olpn": olpn, "qty": l["left"]})
+                l["left"] = 0
+            continue
+        try:
+            want = float(e["qty"])
+        except ValueError:
+            errors.append(f"{olpn},{e['item']},{e['qty']}: quantity must be a number")
+            continue
+        mine = [l for l in lines if l["item"] == e["item"] and l["left"] > 0]
+        left = sum(l["left"] for l in mine)
+        if not mine:
+            errors.append(f"oLPN {olpn} has nothing left to pick for item {e['item']}")
+        elif want <= 0 or want > left:
+            errors.append(f"oLPN {olpn} item {e['item']}: {e['qty']} asked, {left:g} left to pick")
+        else:
+            for l in mine:
+                take = min(want, l["left"])
+                if take > 0:
+                    picks.append({**l, "olpn": olpn, "qty": take})
+                    l["left"] -= take
+                    want -= take
+    for p in picks:
+        p["qty"] = int(p["qty"]) if float(p["qty"]).is_integer() else p["qty"]
+        p.pop("left", None)
+    return picks, errors
+
+
+def generate_picking_message(picks, org=None, template=None):
+    """One PICKING message per pick (see the PICKING note above)."""
+    if not picks:
         return None
-    # Simplified format - will need to be customized based on actual requirements
-    # Format appears to be: PICKING^[order]^[qty]^[task]^[empty]^[olpn]^[empty]^[empty]^[empty]^[container type]^[item]^[many empty fields]^[qty]^[many empty fields]^
-    message_str = f"PICKING^{input_data}^1^PICK1909^^0000099999100011136^^^^OLPN^4000041^^^^^^^^^^3^^^^^^^^^^"
-    return {
-        "EndpointId": MHE_ENDPOINT_ID,
-        "Message": [message_str]
-    }
+    ctx = wm_context(org)
+    messages = []
+    for p in picks:
+        values = {"OrderId": p["order"], "OrderLineId": p["order_line"], "TaskId": p["task"], "TaskDetailId": p["line"], "OlpnId": p["olpn"],
+                  "DestinationContainerType": "OLPN", "ItemId": p["item"], "PickedQuantity": p["qty"], "CloseIndicator": "false",
+                  "ShortIndicator": "false", "PickLocationId": p["location"], "WMContextId": ctx}
+        if template:
+            messages.append(build_from_parser(template, "PICKING", values))
+        else:   # SS-DEMO's (fixed) MhePickingMessageFormatFromWCS layout
+            messages.append(f"PICKING^{p['order']}^{p['order_line']}^{p['task']}^{p['line']}^{p['olpn']}^^^^OLPN^{p['item']}^^^^^^^^^^"
+                            f"{p['qty']}^false^false^{p['location']}^^{ctx}^^^^")
+    return {"EndpointId": MHE_ENDPOINT_ID, "Message": messages}
 
 def generate_loading_message(lpn_shipment_pairs, org=None, template=None):
     """
@@ -934,6 +1082,9 @@ def generate_putaway():
     
     # Get lpn_data_map from validation result to extract TotalQuantity
     lpn_data_map = lpn_validation_result.get('lpn_data', {}) if lpn_validation_result else {}
+    if org and token:   # quantity + item from inventory (the iLPN search has no TotalQuantity)
+        for lpn, contents in lpn_contents(org, token, [pair['lpn'] for pair in pairs]).items():
+            lpn_data_map[lpn] = {**lpn_data_map.get(lpn, {}), **contents}
     
     template, parser_error = get_parser_template(org, token, "IBPUTAWAY") if org and token else (None, "not signed in")
     message = generate_putaway_message(pairs, org=org, lpn_data_map=lpn_data_map, template=template)
@@ -973,18 +1124,83 @@ def send_putaway():
 
 @app.route('/api/generate_picking', methods=['POST'])
 def generate_picking():
-    """Generate MHE message for Picking section"""
+    """Generate MHE message for Picking section: 'oLPN' picks every open line, 'oLPN,Item,Qty' picks that quantity."""
     data = request.json
-    input_data = data.get('input', '').strip()
-    
-    if not input_data:
+    input_text = data.get('input', '').strip()
+    org = data.get('org', '').strip()
+    token = data.get('token', '').strip()
+    if not input_text:
         return jsonify({"success": False, "error": "Input required"})
-    
-    message = generate_picking_message(input_data)
-    if not message:
-        return jsonify({"success": False, "error": "Failed to generate message"})
-    
-    return jsonify({"success": True, "message": message})
+    if not org or not token:
+        return jsonify({"success": False, "error": "Authenticate first - picking looks up the oLPN's pick tasks"})
+    entries = parse_picking_input(input_text)
+    if not entries:
+        return jsonify({"success": False, "error": "Enter an oLPN, or oLPN,Item,Qty (separate entries with semicolons)"})
+    try:
+        picks, errors = plan_picks(org, token, entries)
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Pick lookup failed: {e}"})
+    if errors:
+        return jsonify({"success": False, "error": "; ".join(errors), "picks": picks})
+    template, parser_error = get_parser_template(org, token, "PICKING")
+    message = generate_picking_message(picks, org=org, template=template)
+    return jsonify({"success": True, "message": message, "picks": picks,
+                    "parser": parser_info(template, parser_error, "PICKING", message["Message"][0])})
+
+
+# === ALL ENDPOINTS (v2.4.0) ===
+# A message needs its source endpoint (ours) and the WM endpoint its destination subscriber sends to - e.g. PICKING ->
+# WMPickingService. A stopped WM endpoint ends the message in the journal as ERROR ("the endpoint is stopped").
+CONSOLE_MESSAGE_TYPES = {"RECEIVE": "Receiving", "IBPUTAWAY": "Putaway", "PICKING": "Picking", "Olpn_Loaded": "Loading"}
+_endpoint_cache = {}
+
+
+def expected_endpoints(org, token):
+    """[{endpoint, sections}] - our endpoint first, then each WM endpoint the console's message types are sent to."""
+    hit = _endpoint_cache.get(org.upper())
+    if hit and datetime.now().timestamp() - hit[0] < PARSER_CACHE_SECONDS:
+        return hit[1]
+    found = {MHE_ENDPOINT_ID: ["All (source)"]}
+    for s in _dei_search(org, token, "Subscriber"):
+        mtype = _ref(s.get("MessageTypeId") or s.get("PayloadMessageType"), "PayloadMessageTypeId")
+        ep = _ref(s.get("EndpointId"), "EndpointId")
+        if mtype in CONSOLE_MESSAGE_TYPES and s.get("DestinationSubscriber") and ep and ep != MHE_ENDPOINT_ID:
+            found.setdefault(ep, []).append(CONSOLE_MESSAGE_TYPES[mtype])
+    result = [{"endpoint": ep, "sections": sorted(set(v))} for ep, v in found.items()]
+    _endpoint_cache[org.upper()] = (datetime.now().timestamp(), result)
+    return result
+
+
+def _endpoint_state(org, token, endpoint_id):
+    try:
+        r = requests.get(f"https://{API_HOST}{ENDPOINT_STATUS_PATH}?endpointId={endpoint_id}", headers=_mawm_headers(org, token), timeout=10, verify=False)
+        if r.status_code != 200:
+            return "Offline"
+        body = r.json() or {}
+        return (body.get("data") or {}).get("status") or body.get("status") or "Unknown"
+    except Exception:
+        return "Offline"
+
+
+@app.route('/api/endpoints_status', methods=['POST'])
+def endpoints_status():
+    """Status of every endpoint the console's messages pass through."""
+    data = request.json
+    org = data.get('org', '').strip()
+    token = data.get('token', '').strip()
+    if not org or not token:
+        return jsonify({"success": False, "error": "ORG and token required"})
+    try:
+        eps = expected_endpoints(org, token)
+    except Exception as e:
+        eps = [{"endpoint": MHE_ENDPOINT_ID, "sections": ["All (source)"]}]
+        print(f"[ENDPOINTS] subscriber lookup failed: {e}")
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        states = list(pool.map(lambda e: _endpoint_state(org, token, e["endpoint"]), eps))
+    for e, st in zip(eps, states):
+        e["status"] = st
+    return jsonify({"success": True, "endpoints": eps})
 
 @app.route('/api/send_picking', methods=['POST'])
 def send_picking():
