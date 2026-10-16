@@ -78,7 +78,7 @@ def usage_track():
             **metadata,
             "event_name": event_name,
             "app_name": "mhe-console",
-            "app_version": "2.4.0",
+            "app_version": "2.4.1",
             "timestamp": datetime.now().isoformat()
         }
         

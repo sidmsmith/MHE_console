@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MHE Console v2.4.0</title>
+  <title>MHE Console v2.4.1</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -530,7 +530,7 @@
         <!-- Title - Centered independently with wrapper for alignment -->
         <div style="position: relative; display: flex; align-items: center; justify-content: center; min-height: 2rem; margin-bottom: 0.5rem;">
           <h2 class="text-center mb-0" style="flex: 1;">
-            <a href="#" id="titleLink" class="text-decoration-none" title="MHE Console" target="_blank" style="color: var(--primary); cursor: pointer;">MHE Console v2.4.0</a>
+            <a href="#" id="titleLink" class="text-decoration-none" title="MHE Console" target="_blank" style="color: var(--primary); cursor: pointer;">MHE Console v2.4.1</a>
           </h2>
         </div>
 
@@ -1686,8 +1686,15 @@
         return;
       }
 
+      const formatError = inputFormatError(section, input);
+      if (formatError) {
+        sectionStatus(section, formatError, 'error');
+        logToConsole(`[${section.toUpperCase()}] ${formatError}`, 'error');
+        return;
+      }
+
       const org = orgInput.value.trim();
-      
+
       // Extract section-specific data for metadata
       const lpns = extractLPNsFromInput(section);
       const olpns = section === 'loading' ? extractOLPNsFromInput(section) : [];
@@ -1846,6 +1853,8 @@
 
         // Store message first
         generatedMessages[section] = res.message;
+        generatedFor[section] = input;
+        checkSectionInput(section);
         
         // Extract shipment list for loading section
         const shipments = [];
@@ -2146,6 +2155,68 @@
       input.addEventListener('input', () => {
         sectionStatus(section, ''); // Clear status on input change
       });
+    });
+
+        // INPUT FORMAT CHECKS (v2.4.1) - the same formats the backend parses. Generate is enabled only for a well-formed
+    // input; Send only once a message was generated for exactly the text in the box (edit it and you generate again).
+    const ID_RE = /^[^\s,;]+$/;
+    const idList = (t, what) => {
+      const ids = t.split(/[,\s;]+/).filter(Boolean);
+      return ids.length && ids.every(i => ID_RE.test(i)) ? '' : `Enter ${what} separated by spaces, commas or semicolons`;
+    };
+    const INPUT_FORMATS = {
+      receiving: t => idList(t, 'LPNs'),
+      loading: t => idList(t, 'oLPNs'),
+      putaway: t => {
+        for (const entry of t.split(';').map(p => p.trim()).filter(Boolean)) {
+          const parts = entry.split(',').map(p => p.trim());
+          if (parts.length !== 2 || !parts.every(p => ID_RE.test(p))) return `"${entry}" - use LPN,Location (pairs separated by semicolons)`;
+        }
+        return '';
+      },
+      picking: t => {
+        for (const entry of t.split(/[;\n]+/).map(p => p.trim()).filter(Boolean)) {
+          const parts = entry.split(',').map(p => p.trim());
+          if (parts.length === 1 && parts[0].split(/\s+/).every(p => ID_RE.test(p))) continue;
+          if (parts.length === 3 && ID_RE.test(parts[0]) && ID_RE.test(parts[1])) {
+            const q = Number(parts[2]);
+            if (parts[2] !== '' && Number.isFinite(q) && q > 0) continue;
+            return `"${entry}" - the quantity must be a number above 0`;
+          }
+          return `"${entry}" - use oLPN, or oLPN,Item,Qty (entries separated by semicolons)`;
+        }
+        return '';
+      }
+    };
+    const generatedFor = {};   // section -> the input text its generated message was built from
+
+    function inputFormatError(section, text) {
+      return text ? INPUT_FORMATS[section](text) : 'Input required';
+    }
+
+    function checkSectionInput(section) {
+      const input = document.getElementById(`${section}-input`);
+      const text = input.value.trim();
+      const err = inputFormatError(section, text);
+      const buttons = document.querySelectorAll(`#${section}-content .section-buttons .btn`);
+      buttons[0].disabled = !!err;
+      buttons[1].disabled = !(generatedMessages[section] && generatedFor[section] === text);
+      buttons[1].title = buttons[1].disabled ? 'Generate the message for this input first' : '';
+      const showErr = !!err && !!text;
+      input.classList.toggle('is-invalid', showErr);
+      let hint = document.getElementById(`${section}-format`);
+      if (!hint) {
+        hint = document.createElement('div');
+        hint.id = `${section}-format`;
+        hint.className = 'invalid-feedback';
+        input.insertAdjacentElement('afterend', hint);
+      }
+      hint.textContent = showErr ? err : '';
+    }
+
+    ['receiving', 'putaway', 'picking', 'loading'].forEach(section => {
+      document.getElementById(`${section}-input`).addEventListener('input', () => checkSectionInput(section));
+      checkSectionInput(section);
     });
 
     // Periodically check endpoint status (every 30 seconds)
