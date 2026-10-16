@@ -77,7 +77,7 @@ def usage_track():
             **metadata,
             "event_name": event_name,
             "app_name": "mhe-console",
-            "app_version": "2.3.0",
+            "app_version": "2.3.1",
             "timestamp": datetime.now().isoformat()
         }
         
@@ -597,7 +597,7 @@ def parser_info(template, error, message_type, example):
     return {"source": "built-in", "message_type": message_type, "reason": error, "example": example}
 
 
-def generate_receiving_message(lpns, template=None):
+def generate_receiving_message(lpns, template=None, asn_of=None):
     """
     Generate RECEIVE message format for multiple LPNs.
     Format: RECEIVE^^LPN^^^^^^^
@@ -607,7 +607,7 @@ def generate_receiving_message(lpns, template=None):
         return None
     
     # Generate one message string per LPN
-    message_strings = ([build_from_parser(template, "RECEIVE", {"LpnId": lpn, "IlpnId": lpn, "ContainerId": lpn}) for lpn in lpns]
+    message_strings = ([build_from_parser(template, "RECEIVE", {"LpnId": lpn, "IlpnId": lpn, "ContainerId": lpn, "AsnId": (asn_of or {}).get(lpn) or ""}) for lpn in lpns]
                        if template else [f"RECEIVE^^{lpn}^^^^^^^" for lpn in lpns])   # configured parser, else built-in
     
     return {
@@ -813,7 +813,8 @@ def generate_receiving():
             })
     
     template, parser_error = get_parser_template(org, token, "RECEIVE") if org and token else (None, "not signed in")
-    message = generate_receiving_message(lpns, template)
+    asn_of = {l: ((validation_result or {}).get('lpn_data') or {}).get(l, {}).get('AsnId') for l in lpns}   # each LPN's ASN, from the validation
+    message = generate_receiving_message(lpns, template, asn_of)
     if not message:
         return jsonify({"success": False, "error": "Failed to generate message"})
     
